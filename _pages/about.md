@@ -1,8 +1,8 @@
 ---
-layout: single
 permalink: /about/
-author_profile: true
-toc: true
+title: "About"
 ---
+
+It's Flurry!
 
 A passionate learner from USTC, currently learning Computer Graphics.
