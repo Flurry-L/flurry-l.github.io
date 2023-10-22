@@ -107,8 +107,8 @@ author:
   name             : "Flurry"
   avatar           : "/imgs/avatar.jpg"
   bio              : "A passionate learner from USTC"
-  location         : "Somewhere"
-  email            :
+  location         : null # "China"
+  email            : null # "mailto:flurry.liao@gmail.com"
   links:
     - label: "Email"
       icon: "fas fa-fw fa-envelope-square"
