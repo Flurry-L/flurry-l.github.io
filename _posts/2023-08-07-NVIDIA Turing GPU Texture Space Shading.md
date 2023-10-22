@@ -8,7 +8,7 @@ categories: Research
 tags: 
 published: true
 ---
-本文是对[Texture Space Shading given at the 2018 SIGGRAPH](https://youtu.be/Rpy0-q0TyB0)的整理。
+本文是对 [Texture Space Shading given at the 2018 SIGGRAPH](https://youtu.be/Rpy0-q0TyB0) 的整理。
 - 文章第一部分介绍了 decoupled shading 与传统的 forward shading、deferred shading 的区别
 - 文章第二部分详细讲解了 dicoupled shading 的 pipline，包括了 turing gpu 中提升性能的一系列 features
 - 文章第三部分简介了如何定义 texture space
