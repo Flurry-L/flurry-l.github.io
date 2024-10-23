@@ -1,14 +1,16 @@
 ---
-title: Hello World
+title: （草稿）高斯过程
+date: 2024-10-21 00:00:00
 ---
 
 ## Intro
 
 大部分预测，提供输入时，获得一个预测输出。但高斯过程提供完整的不确定度分布。
+<!-- more -->
 
 在考虑数据之前生成先验函数样本，加入数据后通过贝叶斯理论更新为后验样本
 
-![prior-posterior-sample](../assets/241021/prior-posterior-sample.png)
+![prior-posterior-sample](prior-posterior-sample.png)
 
 GP 不是处理线性函数，而是处理一般的（通常是平滑的）函数。
 
