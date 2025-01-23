@@ -29,6 +29,7 @@ custom_file_path:
   #bodyEnd: source/_data/body-end.njk
   #variable: source/_data/variables.styl
   #mixin: source/_data/mixins.styl
+  sidebar: source/_data/sidebar.swig
   style: source/_data/styles.styl
 
 
@@ -99,7 +100,7 @@ menu:
   home: / || fa fa-home
   about: /about/ || fa fa-user
   tags: /tags/ || fa fa-tags
-  categories: /categories/ || fa fa-th
+  #categories: /categories/ || fa fa-th
   archives: /archives/ || fa fa-archive
   # schedule: /schedule/ || fa fa-calendar
   # sitemap: /sitemap.xml || fa fa-sitemap

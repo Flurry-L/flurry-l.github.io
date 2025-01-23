@@ -1,6 +1,10 @@
 ---
 title: 高斯过程的粗略理解
 date: 2024-10-21 00:00:00
+tags: 
+   - 数学
+   - 渲染
+   - 科研
 ---
 
 在基于阅读论文《From microfacets to participating media: A unified theory of light transport with stochastic geometry》时记录的对高斯过程的粗略理解。
