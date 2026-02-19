@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width">
+<meta name="theme-color" content="#222"><meta name="generator" content="Hexo 7.3.0">
+
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" integrity="sha256-5eIC48iZUHmSlSUz9XtjRyK2mzQkHScZY1WdMaoz74E=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/3.1.1/animate.min.css" integrity="sha256-PR7ttpcvz8qrF57fur/yAx1qXMFJeJFiA6pSzWi0OIE=" crossorigin="anonymous">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/pace/1.2.4/themes/blue/pace-theme-minimal.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pace/1.2.4/pace.min.js" integrity="sha256-gqd7YTjg/BtfqWSwsJOvndl0Bxc8gFImLEkXQT8+qj0=" crossorigin="anonymous"></script>
+
+<script class="next-config" data-name="main" type="application/json">{"hostname":"blog.flurry.top","root":"/","images":"/images","scheme":"Gemini","darkmode":false,"version":"8.21.0","exturl":false,"sidebar":{"position":"left","width_expanded":320,"width_dual_column":240,"display":"post","padding":18,"offset":12},"hljswrap":true,"copycode":{"enable":true,"style":null},"fold":{"enable":true,"height":500},"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":true,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":true,"async":false,"transition":{"menu_item":"fadeInDown","post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js"></script>
+
+    <meta name="description" content="这是成为研究生后的第一个月，也是重建博客后的首次写作。 本以为会记录一下我写 Vulkan 程序时因不知道 depth stencil 只能用于着色器中写入和着色器外剔除、不能直接在着色器中读，导致了一些麻烦，以及解决措施。没想到遇到一堆麻烦事，还没改好这个 bug，预期里应该也不会再修改此程序了。 于是只剩下一篇胡言乱语了。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Nonsense">
+<meta property="og:url" content="https://blog.flurry.top/nonsense/index.html">
+<meta property="og:site_name" content="Flurry&#39;s Blog">
+<meta property="og:description" content="这是成为研究生后的第一个月，也是重建博客后的首次写作。 本以为会记录一下我写 Vulkan 程序时因不知道 depth stencil 只能用于着色器中写入和着色器外剔除、不能直接在着色器中读，导致了一些麻烦，以及解决措施。没想到遇到一堆麻烦事，还没改好这个 bug，预期里应该也不会再修改此程序了。 于是只剩下一篇胡言乱语了。">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2024-09-29T18:00:00.000Z">
+<meta property="article:modified_time" content="2026-02-13T01:53:28.084Z">
+<meta property="article:author" content="Flurry">
+<meta property="article:tag" content="misc">
+<meta name="twitter:card" content="summary">
+
+
+<link rel="canonical" href="https://blog.flurry.top/nonsense/">
+
+
+
+<script class="next-config" data-name="page" type="application/json">{"sidebar":"","isHome":false,"isPost":true,"lang":"zh-CN","comments":true,"permalink":"https://blog.flurry.top/nonsense/","path":"nonsense/","title":"Nonsense"}</script>
+
+<script class="next-config" data-name="calendar" type="application/json">""</script>
+<title>Nonsense | Flurry's Blog</title>
+  
+
+
+
+
+
+
+
+
+  <noscript>
+    <link rel="stylesheet" href="/css/noscript.css">
+  </noscript>
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage" class="use-motion">
+  <div class="headband"></div>
+
+  <main class="main">
+    <div class="column">
+      <header class="header" itemscope itemtype="http://schema.org/WPHeader"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <i class="logo-line"></i>
+      <p class="site-title">Flurry's Blog</p>
+      <i class="logo-line"></i>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger" aria-label="搜索" role="button">
+    </div>
+  </div>
+</div>
+
+
+
+<nav class="site-nav">
+  <ul class="main-menu menu"><li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li><li class="menu-item menu-item-about"><a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a></li><li class="menu-item menu-item-tags"><a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a></li><li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li>
+  </ul>
+</nav>
+
+
+
+
+</header>
+        
+  
+  <aside class="sidebar">
+
+    <div class="sidebar-inner sidebar-nav-active sidebar-toc-active">
+      <ul class="sidebar-nav">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <div class="sidebar-panel-container">
+        <!--noindex-->
+        <div class="post-toc-wrap sidebar-panel">
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%88%91%E7%9A%84%E7%A1%AC%E7%9B%98%E5%92%8C%E7%94%B5%E8%84%91%E5%9D%8F%E4%BA%86"><span class="nav-number">1.</span> <span class="nav-text"> 我的硬盘和电脑坏了</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A2%AB%E5%81%B7%E5%81%B7%E5%A1%9E%E4%BA%86%E4%B8%80%E8%8A%82%E8%AF%BE"><span class="nav-number">2.</span> <span class="nav-text"> 被偷偷塞了一节课</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%A6%BB%E5%BC%80-cad-%E7%BB%84"><span class="nav-number">3.</span> <span class="nav-text"> 离开 CAD 组</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-number">4.</span> <span class="nav-text"> 总结</span></a></li></ol></div>
+        </div>
+        <!--/noindex-->
+
+        <div class="site-overview-wrap sidebar-panel">
+          <div class="site-author animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+    <img class="site-author-image" itemprop="image" alt="Flurry"
+      src="https://q2.qlogo.cn/headimg_dl?dst_uin=1748087899&spec=100">
+  <p class="site-author-name" itemprop="name">Flurry</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap animated">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+        <a href="/archives/">
+          <span class="site-state-item-count">10</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+          <a href="/tags/">
+        <span class="site-state-item-count">7</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author animated">
+      <span class="links-of-author-item">
+        <a href="https://github.com/Flurry-L" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;Flurry-L" rel="noopener me" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="mailto:flurry.liao@gmail.com" title="E-Mail → mailto:flurry.liao@gmail.com" rel="noopener me" target="_blank"><i class="fa fa-envelope fa-fw"></i>E-Mail</a>
+      </span>
+  </div>
+  <div class="cc-license animated" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh-hans" class="cc-opacity" rel="noopener" target="_blank"><img src="https://cdnjs.cloudflare.com/ajax/libs/creativecommons-vocabulary/2020.11.3/assets/license_badges/small/by_nc_sa.svg" alt="Creative Commons"></a>
+  </div>
+<!-- hitokoto -->
+
+<div id="hitokoto_wrap">
+    <div id="hitokoto_text"></div>
+    <div id="hitokoto_from"></div>
+</div>
+
+<script>
+    let hitokoto_wrap = document.getElementById("hitokoto_wrap");
+    let hitokoto_text = document.getElementById('hitokoto_text');
+    let hitokoto_from = document.getElementById('hitokoto_from');
+    
+    async function loadHitokoto() {
+        // Fetch API
+        // 调用一言接口 根据需求配置参数
+        fetch('https://international.v1.hitokoto.cn?c=a&c=d')
+        .then(response => response.json())
+        .then(data => {
+            hitokoto_text.innerText = data.hitokoto;
+            hitokoto_from.innerText = "——" + data.from;
+        })
+        .catch(console.error)
+    }
+    loadHitokoto();
+
+    hitokoto_wrap.addEventListener("click", async function(e) {
+        loadHitokoto();
+        
+        // 复制一言内容到剪贴板
+        // 去除字符串前后空格
+        let content = (hitokoto_text.innerText + hitokoto_from.innerText).trim();
+        // Clipboard API
+        navigator.clipboard.writeText(content)
+        .then(() => console.log("Copied to clipboard: " + content))
+        .catch(console.error)
+    });
+</script>
+        </div>
+      </div>
+    </div>
+
+    
+  </aside>
+
+
+    </div>
+
+    <div class="main-inner post posts-expand">
+
+
+  
+
+
+<div class="post-block">
+  
+  
+
+  <article itemscope itemtype="http://schema.org/Article" class="post-content" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.flurry.top/nonsense/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="https://q2.qlogo.cn/headimg_dl?dst_uin=1748087899&spec=100">
+      <meta itemprop="name" content="Flurry">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="Flurry's Blog">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="post" itemscope itemtype="http://schema.org/CreativeWork">
+      <meta itemprop="name" content="Nonsense | Flurry's Blog">
+      <meta itemprop="description" content="">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Nonsense
+        </h1>
+
+        <div class="post-meta-container">
+          <div class="post-meta">
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar"></i>
+      </span>
+      <span class="post-meta-item-text">发表于</span>
+
+      <time title="创建时间：2024-09-30 02:00:00" itemprop="dateCreated datePublished" datetime="2024-09-30T02:00:00+08:00">2024-09-30</time>
+    </span>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
+      </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2026-02-13 09:53:28" itemprop="dateModified" datetime="2026-02-13T09:53:28+08:00">2026-02-13</time>
+    </span>
+
+  
+    <span class="post-meta-break"></span>
+    <span class="post-meta-item" title="本文字数">
+      <span class="post-meta-item-icon">
+        <i class="far fa-file-word"></i>
+      </span>
+      <span class="post-meta-item-text">本文字数：</span>
+      <span>885</span>
+    </span>
+    <span class="post-meta-item" title="阅读时长">
+      <span class="post-meta-item-icon">
+        <i class="far fa-clock"></i>
+      </span>
+      <span class="post-meta-item-text">阅读时长 &asymp;</span>
+      <span>3 分钟</span>
+    </span>
+</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody"><p>这是成为研究生后的第一个月，也是重建博客后的首次写作。</p>
+<p>本以为会记录一下我写 Vulkan 程序时因不知道 depth stencil 只能用于着色器中写入和着色器外剔除、不能直接在着色器中读，导致了一些麻烦，以及解决措施。没想到遇到一堆麻烦事，还没改好这个 bug，预期里应该也不会再修改此程序了。</p>
+<p>于是只剩下一篇胡言乱语了。</p>
+<span id="more"></span>
+<h2 id="我的硬盘和电脑坏了"><a class="markdownIt-Anchor" href="#我的硬盘和电脑坏了"></a> 我的硬盘和电脑坏了</h2>
+<p>没有缘由地，我的硬盘自从提交本科毕设起，读写速度就没正常过。尝试过清零所有数据重装系统，但也没好几天。刚送返厂硬盘，电脑又进不了 BIOS 了（可能是有一点水洒到键盘上的原因）。总之突然之间有种武器全没了的感觉。</p>
+<p>好在最后有惊无险，硬盘退款了，主板也免费换了。在这期间因为有备用机在学校，并未带来更多不便。</p>
+<p>一件有趣的事是天选 4 拆掉后盖后无法通电，SFD 后众人围着这台电脑推理良久，又用杜邦线四处试探。最后发现是使用霍尔传感器检测，拿 pad 保护壳远远对着也能成功上电。</p>
+<h2 id="被偷偷塞了一节课"><a class="markdownIt-Anchor" href="#被偷偷塞了一节课"></a> 被偷偷塞了一节课</h2>
+<p>研究生选退课截止 9.23，但在这之后我的课表上多出了一门《算法分析与设计》，而且在此之前我的学分已经达到单学期可选上限了，我没有也无法添加这门课。</p>
+<p>联系了开课单位教秘，被态度很差地骂了，但好歹还是可以退掉的，虽然签了一堆字。</p>
+<h2 id="离开-cad-组"><a class="markdownIt-Anchor" href="#离开-cad-组"></a> 离开 CAD 组</h2>
+<p>这可能会是对我研究生生涯影响最大的一件事。</p>
+<p>实在是没想到，驱使我离开待了一年的 CAD 组的不是觉得 CAD 中做渲染局限太大，也不是公司派的任务过于码农（虽然也因此不太喜欢），而是这家公司太奇怪了……制度一天一个样，电子围栏一次比一次强，在最后询问老总高新区很难拿到计算工作量的办公室打卡时长时，他竟然能说出“你在学校也是做科研，在我们这也是做科研，薪水只是你额外的，来不了就不能给你发，但你也应该继续跟着我们做科研”……</p>
+<p>然后后知后觉发现，合同上签着一天 150 的工资，也没说任何限制。后面这也不算一天那也不算工时的，以及合同到期了打算不续签让我照常工作，估计都暗示了这里不太靠谱，可能是用于避免一些法律责任（虽然感觉师兄们都挺好的）。</p>
+<p>最近还弄得很焦虑，一有时间便想着看看代码该改哪里，但算法思路却没什么特别的。既然如此，为什么不干脆闲下来，了解一下自己真正想做的东西呢。</p>
+<h2 id="总结"><a class="markdownIt-Anchor" href="#总结"></a> 总结</h2>
+<p>这一周几乎是接连不断的糟心事发生，感觉自己片刻未得安宁。但正如电脑最终修好了，一切问题终将过去，只是代价不同。而当这一切过去时，又会迎接我怎样的未来呢？</p>
+<p>接下来，我打算快速阅读 SIGGRAPH 2024 的论文，做些新的准备。</p>
+
+    </div>
+
+    
+    
+    
+
+    <footer class="post-footer">
+          
+
+<div class="post-copyright">
+<ul>
+  <li class="post-copyright-author">
+      <strong>本文作者： </strong>Flurry
+  </li>
+  <li class="post-copyright-link">
+      <strong>本文链接：</strong>
+      <a href="https://blog.flurry.top/nonsense/" title="Nonsense">https://blog.flurry.top/nonsense/</a>
+  </li>
+  <li class="post-copyright-license">
+      <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh-hans" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+          <div class="post-tags">
+              <a href="/tags/misc/" rel="tag"># misc</a>
+          </div>
+
+        
+
+          <div class="post-nav">
+            <div class="post-nav-item">
+                <a href="/rebuild-my-blog-again/" rel="prev" title="重建我的博客">
+                  <i class="fa fa-angle-left"></i> 重建我的博客
+                </a>
+            </div>
+            <div class="post-nav-item">
+                <a href="/GP/" rel="next" title="高斯过程的粗略理解">
+                  高斯过程的粗略理解 <i class="fa fa-angle-right"></i>
+                </a>
+            </div>
+          </div>
+    </footer>
+  </article>
+</div>
+
+
+
+
+
+
+</div>
+  </main>
+
+  <footer class="footer">
+    <div class="footer-inner">
+
+  <div class="copyright">
+    &copy; 
+    <span itemprop="copyrightYear">2026</span>
+    <span class="with-love">
+      <i class="fa fa-heart"></i>
+    </span>
+    <span class="author" itemprop="copyrightHolder">Flurry</span>
+  </div>
+<div class="wordcount">
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-chart-line"></i>
+    </span>
+      <span>站点总字数：</span>
+    <span title="站点总字数">16k</span>
+  </span>
+  <span class="post-meta-item">
+    <span class="post-meta-item-icon">
+      <i class="fa fa-coffee"></i>
+    </span>
+      <span>站点阅读时长 &asymp;</span>
+    <span title="站点阅读时长">58 分钟</span>
+  </span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/" rel="noopener" target="_blank">NexT.Gemini</a> 强力驱动
+  </div>
+
+    </div>
+  </footer>
+
+  
+  <div class="toggle sidebar-toggle" role="button">
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+    <span class="toggle-line"></span>
+  </div>
+  <div class="sidebar-dimmer"></div>
+  <div class="back-to-top" role="button" aria-label="返回顶部">
+    <i class="fa fa-arrow-up fa-lg"></i>
+    <span>0%</span>
+  </div>
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/Flurry-L" class="github-corner" title="在 GitHub 上关注我" aria-label="在 GitHub 上关注我" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+<noscript>
+  <div class="noscript-warning">Theme NexT works best with JavaScript enabled</div>
+</noscript>
+
+
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.1/anime.min.js" integrity="sha256-XL2inqUJaslATFnHdJOi9GfQ60on8Wx1C2H8DYiN1xY=" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pangu/4.0.7/pangu.min.js" integrity="sha256-j+yj56cdEY2CwkVtGyz18fNybFGpMGJ8JxG3GSyO2+I=" crossorigin="anonymous"></script>
+<script src="/js/comments.js"></script><script src="/js/utils.js"></script><script src="/js/motion.js"></script><script src="/js/sidebar.js"></script><script src="/js/next-boot.js"></script>
+
+  
+
+
+
+
+  <script src="/js/third-party/pace.js"></script>
+
+
+  
+
+
+
+
+  
+
+  <script class="next-config" data-name="enableMath" type="application/json">true</script><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css" integrity="sha256-UF1fgpAiu3tPJN/uCqEUHNe7pnr+QR0SQDNfgglgtcM=" crossorigin="anonymous">
+  <script class="next-config" data-name="katex" type="application/json">{"copy_tex_js":{"url":"https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/copy-tex.min.js","integrity":"sha256-Us54+rSGDSTvIhKKUs4kygE2ipA0RXpWWh0/zLqw3bs="}}</script>
+  <script src="/js/third-party/math/katex.js"></script>
+
+
+
+</body>
+</html>
