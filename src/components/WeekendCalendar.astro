@@ -71,14 +71,19 @@ const rangeLabel = firstMonth && lastMonth
   : '';
 ---
 
-<section class="weekend-calendar" aria-labelledby="weekend-calendar-heading" data-weekend-calendar>
+<section
+  class="weekend-calendar"
+  aria-labelledby="weekend-calendar-heading"
+  data-weekend-calendar
+  data-floating-controls-clear
+>
   <header class="calendar-header">
     <div>
       <p class="calendar-kicker">{rangeLabel}</p>
       <h3 id="weekend-calendar-heading">周末日程</h3>
       <p>{summary}</p>
     </div>
-    <p class="calendar-total" aria-label={`共 ${sortedEvents.length} 条记录`}>
+    <p class="calendar-total">
       <strong>{sortedEvents.length}</strong>
       <span>条记录</span>
     </p>
@@ -143,7 +148,10 @@ const rangeLabel = firstMonth && lastMonth
                     <span aria-hidden="true"></span>
                   </button>
                 ) : (
-                  <span class="calendar-day" aria-label={label}>{day}</span>
+                  <time class="calendar-day" datetime={date}>
+                    <span aria-hidden="true">{day}</span>
+                    <span class="sr-only">{label}</span>
+                  </time>
                 );
               })}
             </div>
@@ -170,7 +178,7 @@ const rangeLabel = firstMonth && lastMonth
               class="calendar-agenda-scroll"
               role="region"
               aria-label={`${month.label}日程列表`}
-              tabindex="0"
+              tabindex="-1"
               data-calendar-agenda-scroll
               data-expanded="false"
             >
@@ -224,10 +232,13 @@ const rangeLabel = firstMonth && lastMonth
 
         if (viewport.dataset.expanded === 'true') {
           toggle.hidden = false;
+          viewport.tabIndex = -1;
           return;
         }
 
-        toggle.hidden = viewport.scrollHeight <= viewport.clientHeight + 1;
+        const overflows = viewport.scrollHeight > viewport.clientHeight + 1;
+        toggle.hidden = !overflows;
+        viewport.tabIndex = overflows ? 0 : -1;
       }
 
       function queueAgendaRefresh(panel) {
@@ -268,6 +279,7 @@ const rangeLabel = firstMonth && lastMonth
           const expanded = viewport.dataset.expanded !== 'true';
           const agenda = viewport.closest('.calendar-agenda');
           viewport.dataset.expanded = String(expanded);
+          viewport.tabIndex = expanded ? -1 : 0;
           if (agenda instanceof HTMLElement) agenda.dataset.expanded = String(expanded);
           toggle.setAttribute('aria-expanded', String(expanded));
           toggle.textContent = expanded ? '收起列表' : '展开全部';

@@ -99,9 +99,9 @@ tags:
 
 应该是太阳将部分雾气照散了，天气较好，这一路上风景都挺好的。
 
-![山1](./huangshan-travel/IMG_9346.jpg)
+![云雾间的黄山峰林与松树](./huangshan-travel/IMG_9346.jpg)
 
-![山2](./huangshan-travel/IMG_9344.jpg)
+![山路尽头雾中的石峰](./huangshan-travel/IMG_9344.jpg)
 
 在这条路的观景台帮哪吒同学拍了很多照，正要打道回府了。诶，又遇上了雨哥。
 
@@ -129,21 +129,21 @@ tags:
 
 打字时天边突然有了一条更亮的颜色，然后以肉眼可见的速度日出雾散。没想到给我们看上真的黄山日出、云海缭绕了！
 
-![日](./huangshan-travel/IMG_9398.jpg)
+![松树间升起的黄山日出](./huangshan-travel/IMG_9398.jpg)
 
-![月](./huangshan-travel/IMG_9420.jpg)
+![月亮悬在黄山云海上空](./huangshan-travel/IMG_9420.jpg)
 
 ### 西海大峡谷
 
 怀着激动的心情看完日出，7 时整我们离开。哪吒同学一路喊着“好看好看！”，我们奔向西海大峡谷。这条路上高海拔的地方确实甚是美丽，是我喜欢的云雾缭绕、苍劲的山。咱跑好快，几分钟前还看着山下一段距离的某处，不待多时就真的跑到了。边跑还听见有人在“啊啊啊”地对着峡谷中云海喊叫，然后我们也喊，很快其他地方又有人喊。两岸猿声啼不住。
 
-![西海1](./huangshan-travel/IMG_9453.jpg)
+![晨光下云海漫过西海大峡谷群峰](./huangshan-travel/IMG_9453.jpg)
 
-![西海2](./huangshan-travel/IMG_9454.jpg)
+![云雾中的西海大峡谷石峰与松树](./huangshan-travel/IMG_9454.jpg)
 
-![西海3](./huangshan-travel/IMG_9471.jpg)
+![通往西海大峡谷的陡峭石阶](./huangshan-travel/IMG_9471.jpg)
 
-![西海4](./huangshan-travel/IMG_9479.jpg)
+![西海大峡谷云雾中的山峰与山间亭](./huangshan-travel/IMG_9479.jpg)
 
 可跑到接近峡谷底，又感觉四处全是雾了。遇到每一个挑夫咱都问还有多远，大伙都说快了，但真要下楼梯下绝望了。有个挑夫说“我的话，半小时到底吧”，后面想想有点点吹牛逼了xs。
 
@@ -176,9 +176,9 @@ tags:
 
 这一路全是雾，下索道更是什么都看不见。
 
-![雾1](./huangshan-travel/IMG_9531.jpg)
+![浓雾笼罩的下山石阶](./huangshan-travel/IMG_9531.jpg)
 
-![雾2](./huangshan-travel/IMG_9525.jpg)
+![浓雾中的黄山松与远处山路](./huangshan-travel/IMG_9525.jpg)
 
 ## 一抹奇幻色彩？
 

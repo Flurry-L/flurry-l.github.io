@@ -10,6 +10,13 @@ export const SITE = {
   github: 'https://github.com/Flurry-L',
 } as const;
 
+export const GISCUS = {
+  repo: 'Flurry-L/flurry-l.github.io',
+  repoId: 'R_kgDOM37R5A',
+  category: 'Announcements',
+  categoryId: 'DIC_kwDOM37R5M4DA9uq',
+} as const;
+
 export const NAV_ITEMS = [
   { label: '文章', href: '/' },
   { label: '归档', href: '/archives/' },

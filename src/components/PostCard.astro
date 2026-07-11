@@ -10,15 +10,15 @@ const { post } = Astro.props;
 ---
 
 <article class="post-card">
-  <div class="post-card-meta">
-    <time datetime={post.data.date.toISOString()}>{formatDate(post.data.date)}</time>
-    <span>{getReadingTime(post)} 分钟</span>
-  </div>
   <h2><a href={`/${post.id}/`}>{post.data.title}</a></h2>
   <p>{getExcerpt(post)}</p>
-  {post.data.tags.length > 0 && (
-    <div class="tag-row" aria-label="文章标签">
-      {post.data.tags.map((tag) => <a href={`/tags/${encodeURIComponent(tag)}/`}>#{tag}</a>)}
-    </div>
-  )}
+  <div class="post-meta">
+    <time class="post-meta-item" datetime={post.data.date.toISOString()}>{formatDate(post.data.date)}</time>
+    <span class="post-meta-item">{getReadingTime(post)} 分钟</span>
+    {post.data.tags.length > 0 && (
+      <div class="post-meta-item meta-tags">
+        {post.data.tags.map((tag) => <a href={`/tags/${encodeURIComponent(tag)}/`}>#{tag}</a>)}
+      </div>
+    )}
+  </div>
 </article>

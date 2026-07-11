@@ -1,22 +1,226 @@
 ---
 import type { MarkdownHeading } from 'astro';
+import { ArrowUp, ChevronDown, ListTree } from '@lucide/vue';
+import TocList from './TocList.astro';
 
 interface Props {
   headings: MarkdownHeading[];
+  variant: 'desktop' | 'compact';
 }
 
+const { variant } = Astro.props;
 const headings = Astro.props.headings.filter((heading) => heading.depth === 2 || heading.depth === 3);
+const sectionCount = headings.filter((heading) => heading.depth === 2).length;
 ---
 
-{headings.length > 1 && (
-  <aside class="post-toc" aria-label="文章目录">
-    <strong>目录</strong>
-    <ol>
-      {headings.map((heading) => (
-        <li class:list={[`toc-depth-${heading.depth}`]}>
-          <a href={`#${heading.slug}`}>{heading.text}</a>
-        </li>
-      ))}
-    </ol>
-  </aside>
+{headings.length > 1 && variant === 'desktop' && (
+  <nav class="post-toc" aria-labelledby="post-toc-title" data-post-toc data-post-toc-desktop>
+    <div class="post-toc-header">
+      <strong id="post-toc-title">目录</strong>
+      <span>{sectionCount} 节</span>
+    </div>
+    <TocList headings={headings} />
+    <a class="toc-back-to-top" href="#top" data-back-to-top hidden tabindex="-1">
+      <ArrowUp size={15} strokeWidth={1.8} aria-hidden="true" />
+      <span>回到顶部</span>
+    </a>
+  </nav>
+)}
+
+{headings.length > 1 && variant === 'compact' && (
+  <div class="post-toc-compact-slot" data-post-toc-compact-slot>
+    <details class="post-toc-compact" data-post-toc data-post-toc-compact>
+      <summary aria-label="文章目录" title="文章目录">
+        <ListTree class="toc-compact-icon" size={18} strokeWidth={1.8} aria-hidden="true" />
+        <span class="toc-compact-label">本文目录</span>
+        <span class="toc-compact-count">{sectionCount} 节</span>
+        <ChevronDown class="toc-compact-chevron" size={16} strokeWidth={1.8} aria-hidden="true" />
+      </summary>
+      <nav class="toc-compact-panel" aria-label="文章目录">
+        <TocList headings={headings} />
+      </nav>
+    </details>
+  </div>
+)}
+
+{headings.length > 1 && variant === 'desktop' && (
+  <script is:inline>
+    (() => {
+      const installKey = '__flurryPostTocInstalled';
+      if (window[installKey]) return;
+      window[installKey] = true;
+
+      function enhancePostToc() {
+        const desktopToc = document.querySelector('[data-post-toc-desktop]');
+        const compactToc = document.querySelector('[data-post-toc-compact]');
+        const compactSlot = document.querySelector('[data-post-toc-compact-slot]');
+        const compactPanel = compactToc?.querySelector('.toc-compact-panel');
+        const prose = document.querySelector('.prose');
+
+        if (!(desktopToc instanceof HTMLElement)
+          || !(compactToc instanceof HTMLDetailsElement)
+          || !(compactSlot instanceof HTMLElement)
+          || !(compactPanel instanceof HTMLElement)
+          || !(prose instanceof HTMLElement)) return;
+        if (desktopToc.dataset.enhanced === 'true') return;
+
+        const tocContainers = [desktopToc, compactToc];
+        const links = [...document.querySelectorAll('[data-post-toc] [data-toc-id]')];
+        const ids = [...new Set(links.map((link) => link.dataset.tocId).filter(Boolean))];
+        const headingElements = ids
+          .map((id) => document.getElementById(id))
+          .filter((heading) => heading instanceof HTMLElement);
+
+        if (headingElements.length === 0) return;
+
+        tocContainers.forEach((container) => {
+          container.dataset.enhanced = 'true';
+        });
+
+        let activeId = null;
+        let frame = 0;
+        let compactDetached = false;
+        const compactQuery = window.matchMedia('(max-width: 1223px)');
+
+        function updateCompactPosition() {
+          const shouldDetach = compactQuery.matches
+            && compactSlot.getBoundingClientRect().bottom <= 12;
+          if (shouldDetach === compactDetached) return;
+
+          compactDetached = shouldDetach;
+          compactToc.open = false;
+          compactToc.dataset.detached = String(shouldDetach);
+        }
+
+        function keepLinkVisible(container, link, topInset, bottomInset) {
+          if (!(container instanceof HTMLElement)
+            || !(link instanceof HTMLElement)
+            || container.offsetParent === null) return;
+          const containerRect = container.getBoundingClientRect();
+          const linkRect = link.getBoundingClientRect();
+
+          if (linkRect.top < containerRect.top + topInset) {
+            container.scrollTop -= containerRect.top + topInset - linkRect.top;
+          } else if (linkRect.bottom > containerRect.bottom - bottomInset) {
+            container.scrollTop += linkRect.bottom - (containerRect.bottom - bottomInset);
+          }
+        }
+
+        function keepActiveLinksVisible() {
+          keepLinkVisible(
+            desktopToc,
+            desktopToc.querySelector('[aria-current="location"]'),
+            44,
+            16,
+          );
+          if (compactToc.open) {
+            keepLinkVisible(
+              compactPanel,
+              compactToc.querySelector('[aria-current="location"]'),
+              12,
+              12,
+            );
+          }
+        }
+
+        function setActive(nextId) {
+          if (nextId === activeId) return;
+          activeId = nextId;
+
+          links.forEach((link) => {
+            if (link.dataset.tocId === nextId) link.setAttribute('aria-current', 'location');
+            else link.removeAttribute('aria-current');
+          });
+
+          tocContainers.forEach((container) => {
+            container.querySelectorAll('[data-toc-group]').forEach((group) => {
+              const containsActive = [...group.querySelectorAll('[data-toc-id]')]
+                .some((link) => link.dataset.tocId === nextId);
+              group.classList.toggle('is-current-section', containsActive);
+            });
+          });
+
+          requestAnimationFrame(keepActiveLinksVisible);
+        }
+
+        function update() {
+          frame = 0;
+          updateCompactPosition();
+          const activationY = Math.min(300, window.innerHeight / 3);
+          const headingTops = headingElements.map((heading) => heading.getBoundingClientRect().top);
+          let nextId = null;
+
+          for (let index = 0; index < headingElements.length; index += 1) {
+            if (headingTops[index] <= activationY) nextId = headingElements[index].id;
+            else break;
+          }
+
+          const atPageEnd = window.scrollY + window.innerHeight
+            >= document.documentElement.scrollHeight - 2;
+          if (atPageEnd) nextId = headingElements.at(-1)?.id ?? nextId;
+          setActive(nextId);
+        }
+
+        function schedule() {
+          if (frame === 0) frame = requestAnimationFrame(update);
+        }
+
+        compactToc.addEventListener('toggle', () => {
+          if (compactToc.open) requestAnimationFrame(keepActiveLinksVisible);
+          schedule();
+        });
+        compactToc.addEventListener('keydown', (event) => {
+          if (event.key === 'Escape') {
+            compactToc.open = false;
+            compactToc.querySelector('summary')?.focus();
+          }
+        });
+        document.addEventListener('pointerdown', (event) => {
+          if (compactToc.open
+            && event.target instanceof Node
+            && !compactToc.contains(event.target)) {
+            compactToc.open = false;
+          }
+        });
+        links.forEach((link) => {
+          link.addEventListener('click', () => {
+            if (compactToc.contains(link)) {
+              compactToc.open = false;
+              const targetId = link.dataset.tocId;
+              const target = targetId ? document.getElementById(targetId) : null;
+
+              if (target instanceof HTMLElement) {
+                const previousTabIndex = target.getAttribute('tabindex');
+                target.setAttribute('tabindex', '-1');
+                requestAnimationFrame(() => {
+                  target.focus({ preventScroll: true });
+                  target.addEventListener('blur', () => {
+                    if (previousTabIndex === null) target.removeAttribute('tabindex');
+                    else target.setAttribute('tabindex', previousTabIndex);
+                  }, { once: true });
+                });
+              }
+            }
+            schedule();
+          });
+        });
+
+        window.addEventListener('scroll', schedule, { passive: true });
+        window.addEventListener('resize', () => {
+          schedule();
+          requestAnimationFrame(keepActiveLinksVisible);
+        });
+        window.addEventListener('hashchange', schedule);
+        new ResizeObserver(schedule).observe(prose);
+        document.fonts?.ready.then(schedule);
+        schedule();
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', enhancePostToc, { once: true });
+      } else {
+        enhancePostToc();
+      }
+    })();
+  </script>
 )}

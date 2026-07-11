@@ -20,7 +20,7 @@ interface Props {
 const { name, posts } = Astro.props;
 ---
 
-<BaseLayout title={`#${name}`} description={`标签 ${name} 下的文章。`}>
+<BaseLayout title={`#${name}`} description={`标签 ${name} 下的文章。`} layout="listing">
   <header class="page-intro compact-intro">
     <a class="back-link" href="/tags/">全部标签</a>
     <h1>#{name}</h1>

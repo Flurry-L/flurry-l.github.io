@@ -9,7 +9,7 @@ const tags = getTagCounts(posts);
 
 <BaseLayout title="标签" description="按主题浏览 Flurry 的文章。">
   <header class="page-intro">
-    <h1>标签</h1>
+    <h1>主题索引</h1>
   </header>
 
   <nav aria-label="全部标签">
@@ -18,7 +18,10 @@ const tags = getTagCounts(posts);
         <li>
           <a href={`/tags/${encodeURIComponent(tag.name)}/`}>
             <span>#{tag.name}</span>
-            <small aria-label={`${tag.count} 篇文章`}>{tag.count}</small>
+            <small>
+              <span aria-hidden="true">{tag.count}</span>
+              <span class="sr-only">{tag.count} 篇文章</span>
+            </small>
           </a>
         </li>
       ))}

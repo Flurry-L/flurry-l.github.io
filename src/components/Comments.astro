@@ -1,13 +1,31 @@
 ---
-const repo = import.meta.env.PUBLIC_GISCUS_REPO?.trim();
-const repoId = import.meta.env.PUBLIC_GISCUS_REPO_ID?.trim();
-const category = import.meta.env.PUBLIC_GISCUS_CATEGORY?.trim();
-const categoryId = import.meta.env.PUBLIC_GISCUS_CATEGORY_ID?.trim();
+import { GISCUS } from '../site';
+
+const envConfig = {
+  repo: import.meta.env.PUBLIC_GISCUS_REPO?.trim(),
+  repoId: import.meta.env.PUBLIC_GISCUS_REPO_ID?.trim(),
+  category: import.meta.env.PUBLIC_GISCUS_CATEGORY?.trim(),
+  categoryId: import.meta.env.PUBLIC_GISCUS_CATEGORY_ID?.trim(),
+};
+const envValues = Object.values(envConfig);
+const hasAnyOverride = envValues.some(Boolean);
+const hasCompleteOverride = envValues.every(Boolean);
+
+if (hasAnyOverride && !hasCompleteOverride) {
+  console.warn('[giscus] Ignoring partial environment override; set all four PUBLIC_GISCUS_* values.');
+}
+
+const { repo, repoId, category, categoryId } = hasCompleteOverride ? envConfig : GISCUS;
 const isConfigured = Boolean(repo && repoId && category && categoryId);
 ---
 
 {isConfigured && (
-  <section class="comments-section" aria-labelledby="comments-heading" data-comments>
+  <section
+    class="comments-section"
+    aria-labelledby="comments-heading"
+    data-comments
+    data-floating-controls-clear
+  >
     <h2 id="comments-heading">评论</h2>
     <div class="giscus"></div>
 
@@ -28,7 +46,7 @@ const isConfigured = Boolean(repo && repoId && category && categoryId);
         giscusScript.dataset.category = category;
         giscusScript.dataset.categoryId = categoryId;
         giscusScript.dataset.mapping = 'pathname';
-        giscusScript.dataset.strict = '1';
+        giscusScript.dataset.strict = '0';
         giscusScript.dataset.reactionsEnabled = '1';
         giscusScript.dataset.emitMetadata = '0';
         giscusScript.dataset.inputPosition = 'top';

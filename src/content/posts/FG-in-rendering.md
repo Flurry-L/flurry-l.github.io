@@ -10,9 +10,9 @@ tags:
 
 <!-- excerpt -->
 
-## Interpolation
+## 帧插值（Interpolation）
 
-### 传统
+### 传统插值方法
 
 使用运动矢量（MV）与深度图进行简单的插帧，预测中间帧，但遮挡区域通常表现不佳
 
@@ -56,9 +56,9 @@ tags:
   >
   > **能解决遮挡（明显进步），但不能解决 shading 的移动**
 
-## Extrapolation
+## 帧外推（Extrapolation）
 
-### 传统  
+### 传统外推方法
 
 基于运动视差的帧外推，使用光流和像素变形，在前向时间步上预测未来帧，但遮挡区域和复杂光照变化处理表现有限
 
@@ -70,7 +70,7 @@ tags:
 
 ### 现代 
 
-#### 渲染了生成帧的 g-buffer
+#### 使用目标帧 G-buffer
 
 有了 MV，故使用 warp 进行渲染结果复用
 
@@ -104,9 +104,9 @@ shading：
   >
   > 挑战：
   >
-  > 1.遮挡（OMV、Lhole）
+  > 1. 遮挡（OMV、Lhole）
   >
-  > 2.着色变化（history encoder、Lshade、demodulation-modulation）
+  > 2. 着色变化（history encoder、Lshade、demodulation-modulation）
   >
   > i、i-1、i-2（历史编码器捕捉阴影高光等），预测 i + 0.5
   >
@@ -122,7 +122,24 @@ shading：
   >
   > Flow-based Refinement network (FRNet)：$\bar{i_t^-}=FRNet(f_g^t(i_{t-1}^-),f_g^t(i_{t-3}^-),r_t^-)$，输出 shading 修复图。FRNet 的输出，与原来的预测帧合成，修复 shading
   >
-  > ESS 和 SS 帧使用不同的编码器，进行超采样。$L_s=\norm{\bar{I_t}-I_t^{gt}}_1+\lambda_{occ}(=1)L_{occ}+\lambda_{vgg}(=0.01)L_{vgg}$，$L_t=\norm{\bar{I_t}-f_r(\bar{I_{t-1}})}_1+\sum_{k=1}^4l_1(\bar{\Phi_t^k},\Phi_t^k)$
+  > ESS 和 SS 帧使用不同的编码器进行超采样，损失函数为：
+  >
+  > $$
+  > L_s =
+  > \left\lVert \bar{I}_t - I_t^{\mathrm{gt}} \right\rVert_1
+  > + \lambda_{\mathrm{occ}} L_{\mathrm{occ}}
+  > + \lambda_{\mathrm{vgg}} L_{\mathrm{vgg}},
+  > \quad
+  > \lambda_{\mathrm{occ}} = 1,\;
+  > \lambda_{\mathrm{vgg}} = 0.01
+  > $$
+  >
+  > $$
+  > L_t =
+  > \left\lVert \bar{I}_t - f_r(\bar{I}_{t-1}) \right\rVert_1
+  > + \sum_{k=1}^{4}
+  > \ell_1(\bar{\Phi}_t^k, \Phi_t^k)
+  > $$
 
 - Wu et al., "Adaptive Recurrent Frame Prediction with Learnable Motion Vectors," 2023
 
@@ -134,7 +151,7 @@ shading：
 
 
 
-#### 没渲染生成帧的 g-buffer
+#### 不使用目标帧 G-buffer
 
 想办法在生成帧复用渲染结果 -> 运动假设
 
@@ -148,7 +165,7 @@ shading：
 
   > 不使用外推帧的 g-buffer
   >
-  > GAE：像素 x 反投影回世界坐标 p，投影到上一帧上的 $\hat{x}$，用 2d 运动向量将 x 移动到上一帧的 $x'$，$\norm{\hat{x}-x'}_2$ 小时是静态（$M_t^{dyn}[x]=0, P_i[x]=p$），否则动态（$M_t^{dyn}[x]=1,P_i[x]=P'_{i-1}[x'],P_0[x]=p$）。假设线性运动，将上一帧的片段移动后，投影到生成帧。用分层背景收集填充 disoccluded 区域
+  > GAE：像素 x 反投影回世界坐标 p，投影到上一帧上的 $\hat{x}$，用 2d 运动向量将 x 移动到上一帧的 $x'$，$\left\lVert \hat{x} - x' \right\rVert_2$ 小于阈值时视为静态（$M_t^{dyn}[x]=0, P_i[x]=p$），否则动态（$M_t^{dyn}[x]=1,P_i[x]=P'_{i-1}[x'],P_0[x]=p$）。假设线性运动，将上一帧的片段移动后，投影到生成帧。用分层背景收集填充 disoccluded 区域
   >
   > 自适应渲染窗口：使用相机姿态估计
   >
@@ -165,9 +182,9 @@ shading：
 
 神经网络计算：Tensor core（专门用于做矩阵乘），和 cuda core 是独立硬件
 
-Optical Flow Accelerate：Ada 后有的专用硬件，专门用来做光流，没说是什么算法
+NVIDIA Optical Flow Accelerator（OFA）：NVIDIA 自 Turing 架构起提供的光流专用硬件单元；具体实现算法并未公开
 
-Nvidia Reflex：降低内插的延迟
+NVIDIA Reflex：降低内插的延迟
 
 ### FSR3
 

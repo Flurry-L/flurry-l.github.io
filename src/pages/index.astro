@@ -8,12 +8,13 @@ const posts = sortPosts(await getCollection('posts', ({ data }) => !data.draft))
 const tags = getTagCounts(posts);
 ---
 
-<BaseLayout>
+<BaseLayout layout="home">
   <header class="page-intro home-intro">
-    <h1>文章</h1>
-    <div class="home-stats" aria-label="博客统计">
-      <span><strong>{posts.length}</strong> 篇文章</span>
-      <span><strong>{tags.length}</strong> 个标签</span>
+    <h1>最近更新</h1>
+    <div class="home-stats">
+      <a href="/archives/" aria-label={`${posts.length} 篇文章`}><strong>{posts.length}</strong> 篇</a>
+      <span aria-hidden="true">·</span>
+      <a href="/tags/" aria-label={`${tags.length} 个标签`}><strong>{tags.length}</strong> 个标签</a>
     </div>
   </header>
 

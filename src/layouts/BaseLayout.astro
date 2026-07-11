@@ -2,7 +2,8 @@
 import 'katex/dist/katex.min.css';
 import '../styles/global.css';
 import CodeBlockEnhancer from '../components/CodeBlockEnhancer.astro';
-import SiteSidebar from '../components/SiteSidebar.astro';
+import BackToTop from '../components/BackToTop.astro';
+import SiteHeader from '../components/SiteHeader.astro';
 import { SITE } from '../site';
 
 interface Props {
@@ -10,6 +11,8 @@ interface Props {
   description?: string;
   image?: string;
   article?: boolean;
+  activeSection?: 'articles';
+  layout?: 'default' | 'home' | 'listing';
 }
 
 const {
@@ -17,17 +20,21 @@ const {
   description = SITE.description,
   image = '/og.png',
   article = false,
+  activeSection,
+  layout = 'default',
 } = Astro.props;
 const pageTitle = title ? `${title} | ${SITE.title}` : SITE.title;
 const canonical = new URL(Astro.url.pathname, SITE.url);
 const imageUrl = new URL(image, SITE.url);
+const resolvedLayout = article ? 'article' : layout;
+const showBackToTop = article || resolvedLayout === 'home';
 ---
 
 <!doctype html>
 <html lang={SITE.locale}>
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="generator" content={Astro.generator} />
     <meta name="description" content={description} />
     <meta name="theme-color" content="#f3f5f4" />
@@ -55,19 +62,24 @@ const imageUrl = new URL(image, SITE.url);
     </script>
   </head>
   <body>
-    <a class="skip-link" href="#main-content">跳到正文</a>
-    <div class="site-layout">
-      <SiteSidebar />
+    <a class="skip-link" href="#main-content">跳到主要内容</a>
+    <SiteHeader activeSection={activeSection} />
+    <div class:list={['site-layout', `site-layout-${resolvedLayout}`]}>
       <div class="content-column">
-        <main id="main-content">
+        <main id="main-content" tabindex="-1">
           <slot />
         </main>
         <footer class="site-footer">
-          <span>© {new Date().getFullYear()} {SITE.author}</span>
-          <span>Built with Astro + Vue</span>
+          <span>© {new Date().getFullYear()} {SITE.author} · Astro + Vue</span>
         </footer>
       </div>
     </div>
+    {showBackToTop && (
+      <BackToTop
+        minPageViewports={resolvedLayout === 'home' ? 1.75 : 4}
+        showAfterViewports={resolvedLayout === 'home' ? 0.75 : 2.5}
+      />
+    )}
     <CodeBlockEnhancer />
   </body>
 </html>

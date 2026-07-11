@@ -27,7 +27,7 @@ const { post, newer, older } = Astro.props;
 const { Content, headings } = await render(post);
 ---
 
-<BaseLayout title={post.data.title} description={getExcerpt(post)} article>
+<BaseLayout title={post.data.title} description={getExcerpt(post)} article activeSection="articles">
   <PostLayout post={post} headings={headings} newer={newer} older={older}>
     <Content />
   </PostLayout>

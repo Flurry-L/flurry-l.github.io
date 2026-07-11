@@ -25,9 +25,15 @@ repository's **Settings > Pages**, set **Build and deployment > Source** to
 
 ## Comments
 
-Article comments use [Giscus](https://giscus.app/). Create a public repository
-with GitHub Discussions enabled, install the Giscus app for that repository,
-and add these GitHub Actions repository variables:
+Article comments use [Giscus](https://giscus.app/) and default to this
+repository's `Announcements` discussion category. The public repository and
+category IDs live in `src/site.ts`, so comments work without deployment
+secrets. Before publishing, keep the repository public, enable GitHub
+Discussions, install the Giscus app for the repository, and keep the configured
+discussion category available.
+
+These optional GitHub Actions repository variables can override the defaults.
+Set all four together:
 
 ```text
 PUBLIC_GISCUS_REPO
@@ -36,8 +42,8 @@ PUBLIC_GISCUS_CATEGORY
 PUBLIC_GISCUS_CATEGORY_ID
 ```
 
-Use `.env.example` for local development. The comments section is omitted until
-all four values are present.
+When testing an alternative Giscus repository locally, copy `.env.example` to
+`.env` and fill in all four values.
 
 ## Analytics
 

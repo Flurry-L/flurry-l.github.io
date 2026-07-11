@@ -25,7 +25,7 @@ onMounted(() => {
 
 <template>
   <button
-    class="icon-button"
+    class="header-tool theme-toggle"
     type="button"
     :aria-label="label"
     :title="label"

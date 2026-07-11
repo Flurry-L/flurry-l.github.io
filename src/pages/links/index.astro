@@ -13,18 +13,20 @@ const links = [
 
 <BaseLayout title="友情链接" description="Flurry 的友情链接。">
   <header class="page-intro">
-    <h1>友链</h1>
+    <h1>朋友们</h1>
   </header>
 
-  <div class="friend-grid">
+  <ul class="friend-grid">
     {links.map((link) => (
-      <a class="friend-card" href={link.url} target="_blank" rel="noreferrer">
-        <img src={link.avatar} width="52" height="52" alt="" loading="lazy" />
-        <span>
-          <strong>{link.name}</strong>
-          <small>{link.description}</small>
-        </span>
-      </a>
+      <li>
+        <a class="friend-card" href={link.url}>
+          <img src={link.avatar} width="52" height="52" alt="" />
+          <span>
+            <strong>{link.name}</strong>
+            <small>{link.description}</small>
+          </span>
+        </a>
+      </li>
     ))}
-  </div>
+  </ul>
 </BaseLayout>
