@@ -1,7 +1,7 @@
 export const SITE = {
   title: "Flurry's Blog",
   shortTitle: 'Flurry',
-  description: '记录技术，也记录生活。',
+  description: '记录技术和生活。',
   author: 'Flurry',
   locale: 'zh-CN',
   url: 'https://blog.flurry.top',
