@@ -105,6 +105,7 @@ menu:
   # schedule: /schedule/ || fa fa-calendar
   # sitemap: /sitemap.xml || fa fa-sitemap
   # commonweal: /404/ || fa fa-heartbeat
+  友链: /links/ || fa fa-link
 
 # Enable / Disable menu icons / item badges.
 menu_settings:
