@@ -1,9 +1,19 @@
+# Operating system files
 .DS_Store
 Thumbs.db
-db.json
+
+# Logs
 *.log
+
+# Dependencies and Astro build output
 node_modules/
-public/
-.deploy*/
-_multiconfig.yml
+dist/
+.astro/
+
+# Local environment variables
+.env
+.env.*
+!.env.example
+
+# Unpublished local drafts
 draft/

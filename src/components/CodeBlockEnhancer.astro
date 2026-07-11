@@ -1,0 +1,98 @@
+<script is:inline>
+  (() => {
+    const installKey = '__flurryCodeBlockEnhancerInstalled';
+    const languageLabels = {
+      astro: 'Astro',
+      bash: 'Shell',
+      c: 'C',
+      cpp: 'C++',
+      'c++': 'C++',
+      cxx: 'C++',
+      css: 'CSS',
+      glsl: 'GLSL',
+      html: 'HTML',
+      js: 'JavaScript',
+      javascript: 'JavaScript',
+      json: 'JSON',
+      jsx: 'JSX',
+      py: 'Python',
+      python: 'Python',
+      sh: 'Shell',
+      shell: 'Shell',
+      ts: 'TypeScript',
+      tsx: 'TSX',
+      typescript: 'TypeScript',
+      vue: 'Vue',
+      yaml: 'YAML',
+      yml: 'YAML',
+      zsh: 'Shell',
+    };
+
+    function getLanguageLabel(pre) {
+      const language = pre.dataset.language?.trim();
+      if (!language) return 'CODE';
+
+      return languageLabels[language.toLowerCase()] ?? language.toUpperCase();
+    }
+
+    function enhanceCodeBlocks() {
+      document.querySelectorAll('.prose pre').forEach((pre) => {
+        if (!(pre instanceof HTMLElement)) return;
+        if (pre.dataset.codeEnhanced === 'true' || pre.closest('.code-block')) return;
+
+        const block = document.createElement('div');
+        block.className = 'code-block';
+
+        const toolbar = document.createElement('div');
+        toolbar.className = 'code-toolbar';
+
+        const language = document.createElement('span');
+        language.className = 'code-language';
+        language.textContent = getLanguageLabel(pre);
+
+        const copyButton = document.createElement('button');
+        copyButton.className = 'code-copy-button';
+        copyButton.type = 'button';
+        copyButton.textContent = '复制';
+        copyButton.setAttribute('aria-label', '复制代码');
+        copyButton.setAttribute('aria-live', 'polite');
+
+        let resetTimer;
+        copyButton.addEventListener('click', async () => {
+          window.clearTimeout(resetTimer);
+
+          try {
+            if (!navigator.clipboard?.writeText) throw new Error('Clipboard API unavailable');
+            await navigator.clipboard.writeText(pre.textContent ?? '');
+            copyButton.textContent = '已复制';
+            copyButton.setAttribute('aria-label', '代码已复制');
+          } catch {
+            copyButton.textContent = '复制失败';
+            copyButton.setAttribute('aria-label', '复制代码失败');
+          }
+
+          resetTimer = window.setTimeout(() => {
+            copyButton.textContent = '复制';
+            copyButton.setAttribute('aria-label', '复制代码');
+          }, 1500);
+        });
+
+        toolbar.append(language, copyButton);
+        pre.dataset.codeEnhanced = 'true';
+        pre.before(block);
+        block.append(toolbar, pre);
+      });
+    }
+
+    if (!window[installKey]) {
+      window[installKey] = true;
+      document.addEventListener('astro:page-load', enhanceCodeBlocks);
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', enhanceCodeBlocks, { once: true });
+    } else {
+      enhanceCodeBlocks();
+    }
+  })();
+</script>

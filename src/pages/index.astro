@@ -1,0 +1,23 @@
+---
+import { getCollection } from 'astro:content';
+import PostCard from '../components/PostCard.astro';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getTagCounts, sortPosts } from '../utils/posts';
+
+const posts = sortPosts(await getCollection('posts', ({ data }) => !data.draft));
+const tags = getTagCounts(posts);
+---
+
+<BaseLayout>
+  <header class="page-intro home-intro">
+    <h1>文章</h1>
+    <div class="home-stats" aria-label="博客统计">
+      <span><strong>{posts.length}</strong> 篇文章</span>
+      <span><strong>{tags.length}</strong> 个标签</span>
+    </div>
+  </header>
+
+  <section class="post-list" aria-label="文章列表">
+    {posts.map((post) => <PostCard post={post} />)}
+  </section>
+</BaseLayout>

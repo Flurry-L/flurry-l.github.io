@@ -1,0 +1,59 @@
+---
+import type { MarkdownHeading } from 'astro';
+import Comments from '../components/Comments.astro';
+import PostToc from '../components/PostToc.astro';
+import WeekendCalendar from '../components/WeekendCalendar.astro';
+import type { Post } from '../utils/posts';
+import { formatDate, getReadingTime } from '../utils/posts';
+
+interface Props {
+  post: Post;
+  headings: MarkdownHeading[];
+  newer?: Post;
+  older?: Post;
+}
+
+const { post, headings, newer, older } = Astro.props;
+---
+
+<div class="article-layout">
+  <article class="post-article">
+    <header class="post-header">
+      <a class="back-link" href="/">返回文章列表</a>
+      <h1>{post.data.title}</h1>
+      <div class="post-header-meta">
+        <time datetime={post.data.date.toISOString()}>{formatDate(post.data.date)}</time>
+        <span>{getReadingTime(post)} 分钟阅读</span>
+      </div>
+      {post.data.tags.length > 0 && (
+        <div class="tag-row">
+          {post.data.tags.map((tag) => <a href={`/tags/${encodeURIComponent(tag)}/`}>#{tag}</a>)}
+        </div>
+      )}
+    </header>
+
+    <div class="prose" data-pagefind-body>
+      <slot />
+    </div>
+
+    {post.data.weekendCalendar && <WeekendCalendar {...post.data.weekendCalendar} />}
+
+    <nav class="post-pagination" aria-label="相邻文章">
+      {older ? (
+        <a href={`/${older.id}/`}>
+          <small>上一篇</small>
+          <span>{older.data.title}</span>
+        </a>
+      ) : <span />}
+      {newer && (
+        <a class="next-post" href={`/${newer.id}/`}>
+          <small>下一篇</small>
+          <span>{newer.data.title}</span>
+        </a>
+      )}
+    </nav>
+
+    <Comments />
+  </article>
+  <PostToc headings={headings} />
+</div>

@@ -1,0 +1,32 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { formatMonthDay, sortPosts } from '../../utils/posts';
+
+const posts = sortPosts(await getCollection('posts', ({ data }) => !data.draft));
+const groups = Object.entries(Object.groupBy(posts, (post) => String(post.data.date.getFullYear())))
+  .sort(([a], [b]) => Number(b) - Number(a));
+---
+
+<BaseLayout title="归档" description="按年份浏览 Flurry 的全部文章。">
+  <header class="page-intro">
+    <h1>归档</h1>
+    <p>{posts.length} 篇文章，沿时间倒序排列。</p>
+  </header>
+
+  <div class="archive-list">
+    {groups.map(([year, yearPosts]) => (
+      <section class="archive-year">
+        <h2>{year}</h2>
+        <ol>
+          {yearPosts?.map((post) => (
+            <li>
+              <time datetime={post.data.date.toISOString()}>{formatMonthDay(post.data.date)}</time>
+              <a href={`/${post.id}/`}>{post.data.title}</a>
+            </li>
+          ))}
+        </ol>
+      </section>
+    ))}
+  </div>
+</BaseLayout>

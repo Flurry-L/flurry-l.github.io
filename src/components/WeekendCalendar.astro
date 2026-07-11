@@ -1,0 +1,336 @@
+---
+interface CalendarEvent {
+  date: string;
+  text: string;
+}
+
+interface Props {
+  summary: string;
+  events: CalendarEvent[];
+}
+
+interface DateParts {
+  year: number;
+  month: number;
+  day: number;
+}
+
+const { summary, events } = Astro.props;
+const weekdays = ['一', '二', '三', '四', '五', '六', '日'];
+const weekdayNames = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+
+function parseDate(value: string): DateParts {
+  const [year, month, day] = value.split('-').map(Number);
+  return { year, month, day };
+}
+
+function utcDate(value: string) {
+  const { year, month, day } = parseDate(value);
+  return new Date(Date.UTC(year, month - 1, day));
+}
+
+const sortedEvents = [...events].sort((a, b) => a.date.localeCompare(b.date));
+const eventsByMonth = new Map<string, CalendarEvent[]>();
+
+for (const event of sortedEvents) {
+  const key = event.date.slice(0, 7);
+  const monthEvents = eventsByMonth.get(key) ?? [];
+  monthEvents.push(event);
+  eventsByMonth.set(key, monthEvents);
+}
+
+const months = [...eventsByMonth.entries()].map(([key, monthEvents]) => {
+  const { year, month } = parseDate(`${key}-01`);
+  const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  const firstDayOffset = (new Date(Date.UTC(year, month - 1, 1)).getUTCDay() + 6) % 7;
+  const byDate = new Map<string, CalendarEvent[]>();
+
+  for (const event of monthEvents) {
+    const dayEvents = byDate.get(event.date) ?? [];
+    dayEvents.push(event);
+    byDate.set(event.date, dayEvents);
+  }
+
+  return {
+    key,
+    year,
+    month,
+    label: `${year} 年 ${month} 月`,
+    shortLabel: `${month} 月`,
+    days: Array.from({ length: daysInMonth }, (_, index) => index + 1),
+    firstDayOffset,
+    events: monthEvents,
+    eventsByDate: byDate,
+  };
+});
+
+const firstMonth = months[0];
+const lastMonth = months.at(-1);
+const rangeLabel = firstMonth && lastMonth
+  ? `${firstMonth.year} · ${firstMonth.month} 月至 ${lastMonth.month} 月`
+  : '';
+---
+
+<section class="weekend-calendar" aria-labelledby="weekend-calendar-heading" data-weekend-calendar>
+  <header class="calendar-header">
+    <div>
+      <p class="calendar-kicker">{rangeLabel}</p>
+      <h3 id="weekend-calendar-heading">周末日程</h3>
+      <p>{summary}</p>
+    </div>
+    <p class="calendar-total" aria-label={`共 ${sortedEvents.length} 条记录`}>
+      <strong>{sortedEvents.length}</strong>
+      <span>条记录</span>
+    </p>
+  </header>
+
+  <div class="calendar-frame">
+    <div class="calendar-tabs" role="tablist" aria-label="选择月份">
+      {months.map((month, index) => (
+        <button
+          id={`calendar-tab-${month.key}`}
+          type="button"
+          role="tab"
+          aria-selected={index === 0 ? 'true' : 'false'}
+          aria-controls={`calendar-panel-${month.key}`}
+          tabindex={index === 0 ? 0 : -1}
+          data-calendar-tab
+        >
+          {month.shortLabel}
+        </button>
+      ))}
+    </div>
+
+    <div class="calendar-panels">
+      {months.map((month, monthIndex) => (
+        <section
+          class="calendar-panel"
+          id={`calendar-panel-${month.key}`}
+          role="tabpanel"
+          aria-labelledby={`calendar-tab-${month.key}`}
+          hidden={monthIndex !== 0}
+          data-calendar-panel
+        >
+          <div class="calendar-month">
+            <header>
+              <strong>{month.label}</strong>
+              <span>{month.events.length} 个日程</span>
+            </header>
+
+            <div class="calendar-weekdays" aria-hidden="true">
+              {weekdays.map((weekday) => <span>{weekday}</span>)}
+            </div>
+
+            <div class="calendar-days">
+              {Array.from({ length: month.firstDayOffset }, () => (
+                <span class="calendar-day is-empty" aria-hidden="true"></span>
+              ))}
+              {month.days.map((day) => {
+                const date = `${month.key}-${String(day).padStart(2, '0')}`;
+                const dayEvents = month.eventsByDate.get(date) ?? [];
+                const label = dayEvents.length > 0
+                  ? `${month.month} 月 ${day} 日，${dayEvents.length} 个日程`
+                  : `${month.month} 月 ${day} 日`;
+
+                return dayEvents.length > 0 ? (
+                  <button
+                    class="calendar-day has-event"
+                    type="button"
+                    aria-label={label}
+                    data-calendar-jump={`calendar-agenda-${date}`}
+                  >
+                    <time datetime={date}>{day}</time>
+                    <span aria-hidden="true"></span>
+                  </button>
+                ) : (
+                  <span class="calendar-day" aria-label={label}>{day}</span>
+                );
+              })}
+            </div>
+          </div>
+
+          <div class="calendar-agenda" data-expanded="false">
+            <header>
+              <h4>当月日程</h4>
+              <div class="calendar-agenda-actions">
+                <span>{month.events.length} 项</span>
+                <button
+                  type="button"
+                  aria-expanded="false"
+                  aria-controls={`calendar-agenda-list-${month.key}`}
+                  data-calendar-agenda-toggle
+                  hidden
+                >
+                  展开全部
+                </button>
+              </div>
+            </header>
+            <div
+              id={`calendar-agenda-list-${month.key}`}
+              class="calendar-agenda-scroll"
+              role="region"
+              aria-label={`${month.label}日程列表`}
+              tabindex="0"
+              data-calendar-agenda-scroll
+              data-expanded="false"
+            >
+              <ol>
+                {[...month.eventsByDate.entries()].map(([date, dayEvents]) => {
+                  const { month: eventMonth, day } = parseDate(date);
+                  const weekday = weekdayNames[utcDate(date).getUTCDay()];
+
+                  return (
+                    <li id={`calendar-agenda-${date}`} tabindex="-1">
+                      <time datetime={date}>
+                        <strong>{String(day).padStart(2, '0')}</strong>
+                        <span>{eventMonth} 月 · {weekday}</span>
+                      </time>
+                      <div>
+                        {dayEvents.map((event) => <p>{event.text}</p>)}
+                      </div>
+                    </li>
+                  );
+                })}
+              </ol>
+            </div>
+          </div>
+        </section>
+      ))}
+    </div>
+  </div>
+</section>
+
+<script is:inline>
+  (() => {
+    function enhanceCalendar(calendar) {
+      if (!(calendar instanceof HTMLElement) || calendar.dataset.enhanced === 'true') return;
+      calendar.dataset.enhanced = 'true';
+
+      const tabs = [...calendar.querySelectorAll('[data-calendar-tab]')];
+      const panels = [...calendar.querySelectorAll('[data-calendar-panel]')];
+
+      function refreshAgenda(panel) {
+        const month = panel?.querySelector('.calendar-month');
+        const viewport = panel?.querySelector('[data-calendar-agenda-scroll]');
+        const toggle = panel?.querySelector('[data-calendar-agenda-toggle]');
+        if (!(viewport instanceof HTMLElement) || !(toggle instanceof HTMLButtonElement)) return;
+
+        if (panel instanceof HTMLElement && month instanceof HTMLElement) {
+          const monthHeight = month.getBoundingClientRect().height;
+          if (monthHeight > 0) {
+            panel.style.setProperty('--calendar-month-height', `${monthHeight}px`);
+          }
+        }
+
+        if (viewport.dataset.expanded === 'true') {
+          toggle.hidden = false;
+          return;
+        }
+
+        toggle.hidden = viewport.scrollHeight <= viewport.clientHeight + 1;
+      }
+
+      function queueAgendaRefresh(panel) {
+        window.requestAnimationFrame(() => refreshAgenda(panel));
+      }
+
+      function selectTab(index, focus = false) {
+        tabs.forEach((tab, tabIndex) => {
+          const selected = tabIndex === index;
+          tab.setAttribute('aria-selected', String(selected));
+          tab.tabIndex = selected ? 0 : -1;
+          panels[tabIndex].hidden = !selected;
+        });
+        if (focus) tabs[index]?.focus();
+        queueAgendaRefresh(panels[index]);
+      }
+
+      tabs.forEach((tab, index) => {
+        tab.addEventListener('click', () => selectTab(index));
+        tab.addEventListener('keydown', (event) => {
+          let nextIndex;
+          if (event.key === 'ArrowRight') nextIndex = (index + 1) % tabs.length;
+          if (event.key === 'ArrowLeft') nextIndex = (index - 1 + tabs.length) % tabs.length;
+          if (event.key === 'Home') nextIndex = 0;
+          if (event.key === 'End') nextIndex = tabs.length - 1;
+          if (nextIndex === undefined) return;
+          event.preventDefault();
+          selectTab(nextIndex, true);
+        });
+      });
+
+      calendar.querySelectorAll('[data-calendar-agenda-toggle]').forEach((toggle) => {
+        toggle.addEventListener('click', () => {
+          const controls = toggle.getAttribute('aria-controls');
+          const viewport = controls ? document.getElementById(controls) : null;
+          if (!(toggle instanceof HTMLButtonElement) || !(viewport instanceof HTMLElement)) return;
+
+          const expanded = viewport.dataset.expanded !== 'true';
+          const agenda = viewport.closest('.calendar-agenda');
+          viewport.dataset.expanded = String(expanded);
+          if (agenda instanceof HTMLElement) agenda.dataset.expanded = String(expanded);
+          toggle.setAttribute('aria-expanded', String(expanded));
+          toggle.textContent = expanded ? '收起列表' : '展开全部';
+
+          if (!expanded) {
+            viewport.scrollTop = 0;
+            queueAgendaRefresh(viewport.closest('[data-calendar-panel]'));
+          }
+        });
+      });
+
+      calendar.querySelectorAll('[data-calendar-jump]').forEach((button) => {
+        button.addEventListener('click', () => {
+          const targetId = button.getAttribute('data-calendar-jump');
+          const target = targetId ? document.getElementById(targetId) : null;
+          if (!target) return;
+
+          const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+          const behavior = reduceMotion ? 'auto' : 'smooth';
+          const viewport = target.closest('[data-calendar-agenda-scroll]');
+
+          if (viewport instanceof HTMLElement && viewport.dataset.expanded !== 'true') {
+            const viewportRect = viewport.getBoundingClientRect();
+            const targetRect = target.getBoundingClientRect();
+            const top = viewport.scrollTop
+              + targetRect.top
+              - viewportRect.top
+              - Math.max(0, (viewport.clientHeight - targetRect.height) / 2);
+            viewport.scrollTo({ top: Math.max(0, top), behavior });
+          } else {
+            target.scrollIntoView({ behavior, block: 'center' });
+          }
+
+          target.focus({ preventScroll: true });
+          target.classList.add('is-highlighted');
+          window.setTimeout(() => target.classList.remove('is-highlighted'), 1600);
+        });
+      });
+
+      queueAgendaRefresh(panels[0]);
+      document.fonts?.ready.then(() => {
+        const visiblePanel = panels.find((panel) => !panel.hidden);
+        queueAgendaRefresh(visiblePanel);
+      });
+
+      if ('ResizeObserver' in window) {
+        const observer = new ResizeObserver(() => {
+          const visiblePanel = panels.find((panel) => !panel.hidden);
+          queueAgendaRefresh(visiblePanel);
+        });
+        observer.observe(calendar);
+      }
+    }
+
+    function enhanceCalendars() {
+      document.querySelectorAll('[data-weekend-calendar]').forEach(enhanceCalendar);
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', enhanceCalendars, { once: true });
+    } else {
+      enhanceCalendars();
+    }
+    document.addEventListener('astro:page-load', enhanceCalendars);
+  })();
+</script>

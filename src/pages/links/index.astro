@@ -1,0 +1,30 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+
+const links = [
+  {
+    name: 'RTXUX',
+    url: 'https://blog.rtxux.xyz/',
+    description: '看我没有友链后提出交换的 rtx',
+    avatar: 'https://avatars.githubusercontent.com/u/6316962',
+  },
+];
+---
+
+<BaseLayout title="友情链接" description="Flurry 的友情链接。">
+  <header class="page-intro">
+    <h1>友链</h1>
+  </header>
+
+  <div class="friend-grid">
+    {links.map((link) => (
+      <a class="friend-card" href={link.url} target="_blank" rel="noreferrer">
+        <img src={link.avatar} width="52" height="52" alt="" loading="lazy" />
+        <span>
+          <strong>{link.name}</strong>
+          <small>{link.description}</small>
+        </span>
+      </a>
+    ))}
+  </div>
+</BaseLayout>
