@@ -1,28 +1,33 @@
 ---
-import { getCollection } from 'astro:content';
+import { getPublishedPosts } from '../../data/posts';
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import { formatMonthDay, sortPosts } from '../../utils/posts';
+import { formatMonthDay, formatYear } from '../../utils/posts';
 
-const posts = sortPosts(await getCollection('posts', ({ data }) => !data.draft));
-const groups = Object.entries(Object.groupBy(posts, (post) => String(post.data.date.getFullYear())))
+const posts = await getPublishedPosts();
+const groups = Object.entries(Object.groupBy(posts, (post) => formatYear(post.data.date)))
   .sort(([a], [b]) => Number(b) - Number(a));
 ---
 
-<BaseLayout title="归档" description="按年份浏览 Flurry 的全部文章。">
-  <header class="page-intro">
-    <h1>写作时间线</h1>
-    <p>{posts.length} 篇文章，沿时间倒序排列。</p>
+<BaseLayout title="归档" description="按年份浏览 Flurry 的全部文章。" pageKind="listing">
+  <header class="section-heading section-heading-page">
+    <h1>归档</h1>
+    <span>{posts.length} 篇</span>
   </header>
 
   <div class="archive-list">
     {groups.map(([year, yearPosts]) => (
-      <section class="archive-year">
-        <h2>{year}</h2>
+      <section class="archive-year" aria-labelledby={`archive-${year}`}>
+        <header class="section-heading">
+          <h2 id={`archive-${year}`}>{year}</h2>
+          <span>{yearPosts?.length ?? 0} 篇</span>
+        </header>
         <ol>
           {yearPosts?.map((post) => (
             <li>
-              <time datetime={post.data.date.toISOString()}>{formatMonthDay(post.data.date)}</time>
-              <a href={`/${post.id}/`}>{post.data.title}</a>
+              <a class="content-card archive-card" href={`/${post.id}/`}>
+                <span>{post.data.title}</span>
+                <time datetime={post.data.date.toISOString()}>{formatMonthDay(post.data.date)}</time>
+              </a>
             </li>
           ))}
         </ol>

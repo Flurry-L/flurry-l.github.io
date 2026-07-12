@@ -1,18 +1,18 @@
 ---
-import { getCollection } from 'astro:content';
+import { getPublishedPosts } from '../../data/posts';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { getTagCounts } from '../../utils/posts';
 
-const posts = await getCollection('posts', ({ data }) => !data.draft);
+const posts = await getPublishedPosts();
 const tags = getTagCounts(posts);
 ---
 
-<BaseLayout title="标签" description="按主题浏览 Flurry 的文章。">
-  <header class="page-intro">
-    <h1>主题索引</h1>
+<BaseLayout title="标签" description="按主题浏览 Flurry 的文章。" pageKind="listing">
+  <header class="section-heading section-heading-page">
+    <h1 id="tags-heading">标签</h1>
+    <span>{tags.length} 个</span>
   </header>
-
-  <nav aria-label="全部标签">
+  <nav aria-labelledby="tags-heading">
     <ul class="tag-cloud">
       {tags.map((tag) => (
         <li>

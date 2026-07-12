@@ -1,14 +1,14 @@
 ---
-import { getCollection } from 'astro:content';
 import PostCard from '../../components/PostCard.astro';
+import { getPublishedPosts } from '../../data/posts';
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import { getTagCounts, sortPosts, type Post } from '../../utils/posts';
+import { getTagCounts, type Post } from '../../utils/posts';
 
 export async function getStaticPaths() {
-  const posts = await getCollection('posts', ({ data }) => !data.draft);
+  const posts = await getPublishedPosts();
   return getTagCounts(posts).map(({ name }) => ({
     params: { tag: name },
-    props: { name, posts: sortPosts(posts.filter((post) => post.data.tags.includes(name))) },
+    props: { name, posts: posts.filter((post) => post.data.tags.includes(name)) },
   }));
 }
 
@@ -20,13 +20,12 @@ interface Props {
 const { name, posts } = Astro.props;
 ---
 
-<BaseLayout title={`#${name}`} description={`标签 ${name} 下的文章。`} layout="listing">
-  <header class="page-intro compact-intro">
-    <a class="back-link" href="/tags/">全部标签</a>
+<BaseLayout title={`#${name}`} description={`标签 ${name} 下的文章。`} pageKind="listing">
+  <header class="section-heading section-heading-page">
     <h1>#{name}</h1>
-    <p>{posts.length} 篇文章</p>
+    <span>{posts.length} 篇</span>
   </header>
-  <section class="post-list" aria-label={`${name} 标签文章`}>
+  <section class="post-list tag-post-list" aria-label={`${name} 标签文章`}>
     {posts.map((post) => <PostCard post={post} />)}
   </section>
 </BaseLayout>

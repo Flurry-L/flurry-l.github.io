@@ -1,42 +1,49 @@
 import type { CollectionEntry } from 'astro:content';
+import { markdownToPlainText } from '../features/posts/markdown-text';
+import { SITE } from '../site';
 
 export type Post = CollectionEntry<'posts'>;
+
+const dateFormatter = new Intl.DateTimeFormat(SITE.locale, {
+  timeZone: SITE.timeZone,
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+});
+
+const monthDayFormatter = new Intl.DateTimeFormat(SITE.locale, {
+  timeZone: SITE.timeZone,
+  month: '2-digit',
+  day: '2-digit',
+});
+
+const yearFormatter = new Intl.DateTimeFormat(SITE.locale, {
+  timeZone: SITE.timeZone,
+  year: 'numeric',
+});
 
 export function sortPosts(posts: Post[]) {
   return [...posts].sort((a, b) => b.data.date.getTime() - a.data.date.getTime());
 }
 
 export function formatDate(date: Date) {
-  return new Intl.DateTimeFormat('zh-CN', {
-    timeZone: 'Asia/Shanghai',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).format(date);
+  return dateFormatter.format(date);
 }
 
 export function formatMonthDay(date: Date) {
-  return new Intl.DateTimeFormat('zh-CN', {
-    timeZone: 'Asia/Shanghai',
-    month: '2-digit',
-    day: '2-digit',
-  }).format(date);
+  return monthDayFormatter.format(date);
+}
+
+export function formatYear(date: Date) {
+  return yearFormatter.formatToParts(date).find(({ type }) => type === 'year')?.value
+    ?? String(date.getUTCFullYear());
 }
 
 export function getExcerpt(post: Post, limit = 150) {
   if (post.data.description) return post.data.description;
 
   const intro = (post.body ?? '').split('<!-- excerpt -->')[0];
-  const plain = intro
-    .replace(/```[\s\S]*?```/g, ' ')
-    .replace(/\$\$[\s\S]*?\$\$/g, ' ')
-    .replace(/\$[^$]+\$/g, ' ')
-    .replace(/!\[[^\]]*\]\([^)]*\)/g, ' ')
-    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
-    .replace(/<[^>]+>/g, ' ')
-    .replace(/[#>*_`~$\\{}\[\]]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
+  const plain = markdownToPlainText(intro);
 
   return plain.length > limit ? `${plain.slice(0, limit).trim()}...` : plain;
 }

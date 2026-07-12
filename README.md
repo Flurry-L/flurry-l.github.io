@@ -4,12 +4,39 @@ Personal blog built with Astro, Vue, and Markdown.
 
 ## Development
 
+Use Node.js 24 and npm.
+
 ```bash
 npm install
 npm run dev
 ```
 
 Run `npm run build` before publishing.
+
+## Architecture
+
+- Astro owns routing, content collections, Markdown rendering, SEO, RSS, the
+  sitemap, and the static build.
+- Vue is reserved for stateful islands. The weekend calendar is hydrated only
+  when it approaches the viewport; static controls stay in Astro and vanilla
+  TypeScript.
+- Navigation uses full document loads, so browser controllers initialize once
+  per document. Add explicit teardown hooks before introducing Astro's client
+  router.
+- Pagefind provides the static full-text search, Expressive Code renders code
+  blocks at build time, and tocbot manages article outline state. Pagefind's UI
+  module loads only when search is opened.
+- Giscus uses its official embed. The local integration only supplies repository
+  settings and synchronizes the color theme.
+- UI controls and reading content share the platform sans-serif stack. Code
+  uses the platform monospace stack, and formulas retain KaTeX's math fonts.
+- Expressive Code and Shiki use the Vitesse Light/Dark theme pair. Inline code
+  uses the same monospace token, and Giscus follows the site's light or dark
+  mode.
+
+Shared content queries live in `src/data`, reusable domain features in
+`src/features`, browser-only controllers in `src/scripts`, and component styles
+next to their owning components under `src/styles/components`.
 
 ## Content
 

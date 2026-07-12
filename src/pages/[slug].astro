@@ -1,12 +1,13 @@
 ---
-import { getCollection, render } from 'astro:content';
+import { render } from 'astro:content';
+import { getPublishedPosts } from '../data/posts';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PostLayout from '../layouts/PostLayout.astro';
 import type { Post } from '../utils/posts';
-import { getExcerpt, sortPosts } from '../utils/posts';
+import { getExcerpt } from '../utils/posts';
 
 export async function getStaticPaths() {
-  const posts = sortPosts(await getCollection('posts', ({ data }) => !data.draft));
+  const posts = await getPublishedPosts();
   return posts.map((post, index) => ({
     params: { slug: post.id },
     props: {
@@ -27,7 +28,7 @@ const { post, newer, older } = Astro.props;
 const { Content, headings } = await render(post);
 ---
 
-<BaseLayout title={post.data.title} description={getExcerpt(post)} article activeSection="articles">
+<BaseLayout title={post.data.title} description={getExcerpt(post)} pageKind="article">
   <PostLayout post={post} headings={headings} newer={newer} older={older}>
     <Content />
   </PostLayout>

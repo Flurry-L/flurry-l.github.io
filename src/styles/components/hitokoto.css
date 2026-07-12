@@ -1,0 +1,89 @@
+.hitokoto {
+  position: relative;
+  display: grid;
+  width: 100%;
+  min-height: 96px;
+  height: auto;
+  appearance: none;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-1) var(--space-2);
+  align-content: center;
+  margin: var(--space-3) auto 0;
+  padding: var(--space-3) var(--space-6);
+  color: var(--reading-text);
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 160ms ease, background-color 160ms ease;
+}
+
+.hitokoto:hover {
+  border-color: var(--control-border);
+  background: var(--surface-muted);
+}
+
+.hitokoto[aria-disabled='true'] {
+  cursor: wait;
+}
+
+.hitokoto-text {
+  display: block;
+  width: 100%;
+  grid-column: 1 / -1;
+  color: var(--reading-text);
+  font-family: var(--font-content);
+  font-size: var(--type-meta);
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.hitokoto-from {
+  display: block;
+  width: 100%;
+  grid-row: 2;
+  grid-column: 1;
+  overflow: hidden;
+  color: var(--text-faint);
+  font-size: var(--type-caption);
+  line-height: 1.5;
+  text-align: right;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hitokoto-refresh-icon {
+  grid-row: 2;
+  grid-column: 2;
+  align-self: center;
+  color: var(--text-faint);
+  transition: color 160ms ease, transform 160ms ease;
+}
+
+.hitokoto:hover .hitokoto-refresh-icon,
+.hitokoto:focus-visible .hitokoto-refresh-icon {
+  color: var(--accent-strong);
+}
+
+.hitokoto[data-state='loading'] .hitokoto-refresh-icon {
+  animation: hitokoto-spin 800ms linear infinite;
+}
+
+@keyframes hitokoto-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 1023.98px) {
+  .hitokoto {
+    width: var(--sidebar-content-measure);
+    margin: 0 auto var(--space-7);
+    padding-right: var(--space-4);
+    padding-left: var(--space-4);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hitokoto[data-state='loading'] .hitokoto-refresh-icon {
+    animation: none;
+  }
+}

@@ -1,0 +1,237 @@
+.prose {
+  padding-top: 18px;
+  color: var(--reading-text);
+  font-family: var(--font-content);
+  font-size: var(--type-reading);
+  line-break: strict;
+  line-height: 1.78;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+.standalone-prose {
+  width: 100%;
+  max-width: var(--reading-measure);
+  margin-right: auto;
+  margin-left: auto;
+}
+
+.prose > :first-child {
+  margin-top: 0;
+}
+
+.prose > :last-child {
+  margin-bottom: 0;
+}
+
+.prose p {
+  margin: 0 0 1em;
+  text-wrap: pretty;
+}
+
+.prose :not(pre) > code {
+  padding: 0.06em 0.2em;
+  border-radius: 3px;
+  background: var(--inline-code-bg);
+  color: var(--inline-code-text);
+  font-family: var(--font-code);
+  font-size: 0.875em;
+  font-weight: var(--weight-regular);
+  font-variant-ligatures: none;
+  letter-spacing: 0;
+  line-height: 1.25;
+  vertical-align: 0.02em;
+}
+
+.prose > .expressive-code {
+  margin: var(--space-6) 0;
+}
+
+.prose > .expressive-code:first-child {
+  margin-top: 0;
+}
+
+.prose > .expressive-code:last-child {
+  margin-bottom: 0;
+}
+
+.prose .expressive-code :is(pre, code) {
+  font-variant-ligatures: none;
+  font-weight: var(--weight-regular);
+  letter-spacing: 0;
+}
+
+.prose h2,
+.prose h3,
+.prose h4 {
+  color: var(--text);
+  font-family: var(--font-content-emphasis);
+  letter-spacing: 0;
+  text-wrap: balance;
+}
+
+.prose h2 {
+  margin: 30px 0 10px;
+  font-size: var(--type-section);
+  font-weight: var(--weight-medium);
+  line-height: 34px;
+}
+
+.prose h3 {
+  margin: var(--space-6) 0 var(--space-2);
+  font-size: var(--type-subhead);
+  font-weight: var(--weight-medium);
+  line-height: 30px;
+}
+
+.prose h4 {
+  margin: var(--space-5) 0 var(--space-2);
+  font-size: var(--type-reading);
+  font-weight: var(--weight-medium);
+  line-height: 28px;
+}
+
+.prose h2 + h3,
+.prose h3 + h4 {
+  margin-top: var(--space-4);
+}
+
+.prose a {
+  color: var(--link);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--link) 60%, transparent);
+  text-underline-offset: 3px;
+}
+
+.prose strong {
+  color: var(--text);
+  font-weight: var(--weight-semibold);
+}
+
+.prose a strong {
+  color: inherit;
+}
+
+.prose blockquote {
+  margin: var(--space-6) 0;
+  padding: 0 var(--space-4);
+  border-left: 3px solid var(--quote-border);
+  color: var(--reading-text);
+}
+
+.prose ul,
+.prose ol {
+  margin: 0 0 var(--space-4);
+  padding-left: 1.4em;
+}
+
+.prose li + li {
+  margin-top: var(--space-1);
+}
+
+.prose li > ul,
+.prose li > ol {
+  margin: var(--space-2) 0 0;
+}
+
+.prose li > p {
+  margin: 0;
+}
+
+.prose li > p + p {
+  margin-top: var(--space-2);
+}
+
+.prose blockquote > :first-child {
+  margin-top: 0;
+}
+
+.prose blockquote > :last-child {
+  margin-bottom: 0;
+}
+
+.prose img {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  height: auto;
+  margin: var(--space-7) auto;
+  border-radius: 6px;
+  box-shadow: var(--shadow);
+}
+
+.prose p:has(> img:only-child),
+.prose p:has(> picture:only-child) {
+  margin: var(--space-7) 0;
+}
+
+.prose p > img:only-child,
+.prose p > picture:only-child {
+  display: block;
+  margin: 0 auto;
+}
+
+.prose picture > img {
+  margin: 0 auto;
+}
+
+.prose table {
+  display: block;
+  width: max-content;
+  max-width: 100%;
+  margin: var(--space-6) 0;
+  overflow-x: auto;
+  border-collapse: collapse;
+  font-family: var(--font-ui);
+  font-size: var(--type-meta);
+  line-height: 1.55;
+}
+
+.prose th,
+.prose td {
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  text-align: left;
+}
+
+.prose hr {
+  margin: var(--space-8) 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+}
+
+.prose .katex-display {
+  margin: var(--space-6) 0;
+  padding: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.prose .katex {
+  font-size: 1.08em;
+}
+
+.prose .katex .cjk_fallback {
+  font-family: var(--font-content);
+  font-style: normal;
+}
+@media (max-width: 760px) {
+  .prose {
+    padding-top: var(--space-5);
+    font-size: 16px;
+    line-height: 1.8;
+  }
+
+  .prose h2 {
+    margin-top: 28px;
+  }
+
+  .prose h3 {
+    margin-top: 22px;
+  }
+
+  .prose h4 {
+    margin-top: 18px;
+  }
+}
+

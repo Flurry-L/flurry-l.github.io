@@ -1,8 +1,10 @@
 ---
 import type { MarkdownHeading } from 'astro';
+import '../styles/components/post-layout.css';
+import '../styles/components/post-meta.css';
 import Comments from '../components/Comments.astro';
 import PostToc from '../components/PostToc.astro';
-import WeekendCalendar from '../components/WeekendCalendar.astro';
+import WeekendCalendar from '../features/weekend-calendar/WeekendCalendar.vue';
 import type { Post } from '../utils/posts';
 import { formatDate, getReadingTime } from '../utils/posts';
 
@@ -28,15 +30,21 @@ const { post, headings, newer, older } = Astro.props;
             {post.data.tags.map((tag) => <a href={`/tags/${encodeURIComponent(tag)}/`}>#{tag}</a>)}
           </nav>
         )}
+        <PostToc headings={headings} variant="compact" />
       </div>
-      <PostToc headings={headings} variant="compact" />
     </header>
 
     <div class="prose" data-pagefind-body>
       <slot />
     </div>
 
-    {post.data.weekendCalendar && <WeekendCalendar {...post.data.weekendCalendar} />}
+    {post.data.weekendCalendar && (
+      <WeekendCalendar
+        client:visible
+        instanceId={post.id}
+        {...post.data.weekendCalendar}
+      />
+    )}
 
     <nav class="post-pagination" aria-label="相邻文章" data-floating-controls-clear>
       {older ? (
@@ -57,3 +65,9 @@ const { post, headings, newer, older } = Astro.props;
   </article>
   <PostToc headings={headings} variant="desktop" />
 </div>
+
+<script>
+  import { initPostToc } from '../scripts/post-toc';
+
+  initPostToc();
+</script>

@@ -1,10 +1,10 @@
 import rss from '@astrojs/rss';
-import { getCollection } from 'astro:content';
+import { getPublishedPosts } from '../data/posts';
 import { SITE } from '../site';
-import { getExcerpt, sortPosts } from '../utils/posts';
+import { getExcerpt } from '../utils/posts';
 
 export async function GET(context: { site?: URL }) {
-  const posts = sortPosts(await getCollection('posts', ({ data }) => !data.draft));
+  const posts = await getPublishedPosts();
   return rss({
     title: SITE.title,
     description: SITE.description,
@@ -16,6 +16,6 @@ export async function GET(context: { site?: URL }) {
       link: `/${post.id}/`,
       categories: post.data.tags,
     })),
-    customData: '<language>zh-CN</language>',
+    customData: `<language>${SITE.locale}</language>`,
   });
 }

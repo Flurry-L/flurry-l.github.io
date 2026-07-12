@@ -1,24 +1,14 @@
 ---
-import { getCollection } from 'astro:content';
 import PostCard from '../components/PostCard.astro';
+import { getPublishedPosts } from '../data/posts';
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { getTagCounts, sortPosts } from '../utils/posts';
 
-const posts = sortPosts(await getCollection('posts', ({ data }) => !data.draft));
-const tags = getTagCounts(posts);
+const posts = await getPublishedPosts();
 ---
 
-<BaseLayout layout="home">
-  <header class="page-intro home-intro">
-    <h1>最近更新</h1>
-    <div class="home-stats">
-      <a href="/archives/" aria-label={`${posts.length} 篇文章`}><strong>{posts.length}</strong> 篇</a>
-      <span aria-hidden="true">·</span>
-      <a href="/tags/" aria-label={`${tags.length} 个标签`}><strong>{tags.length}</strong> 个标签</a>
-    </div>
-  </header>
-
-  <section class="post-list" aria-label="文章列表">
+<BaseLayout pageKind="home">
+  <h1 id="articles-heading" class="sr-only">文章</h1>
+  <section class="post-list" aria-labelledby="articles-heading">
     {posts.map((post) => <PostCard post={post} />)}
   </section>
 </BaseLayout>

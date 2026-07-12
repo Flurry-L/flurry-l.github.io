@@ -1,0 +1,39 @@
+---
+import { Moon, Sun } from '@lucide/vue';
+---
+
+<button
+  class="header-tool theme-toggle"
+  type="button"
+  aria-label="切换颜色主题"
+  title="切换颜色主题"
+  data-theme-toggle
+>
+  <Sun class="theme-icon theme-icon-sun" size={20} strokeWidth={1.8} aria-hidden="true" />
+  <Moon class="theme-icon theme-icon-moon" size={20} strokeWidth={1.8} aria-hidden="true" />
+</button>
+
+<script>
+  import { initThemeToggle } from '../scripts/theme';
+
+  const button = document.querySelector('[data-theme-toggle]');
+  if (button instanceof HTMLButtonElement) initThemeToggle(button);
+</script>
+
+<style>
+  .theme-toggle {
+    position: relative;
+  }
+
+  .theme-icon-sun {
+    display: none;
+  }
+
+  :global(:root[data-theme='dark']) .theme-icon-sun {
+    display: block;
+  }
+
+  :global(:root[data-theme='dark']) .theme-icon-moon {
+    display: none;
+  }
+</style>

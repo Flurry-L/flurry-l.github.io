@@ -1,4 +1,5 @@
 ---
+import { ExternalLink } from '@lucide/vue';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 
 const links = [
@@ -11,22 +12,24 @@ const links = [
 ];
 ---
 
-<BaseLayout title="友情链接" description="Flurry 的友情链接。">
-  <header class="page-intro">
-    <h1>朋友们</h1>
-  </header>
-
-  <ul class="friend-grid">
-    {links.map((link) => (
-      <li>
-        <a class="friend-card" href={link.url}>
-          <img src={link.avatar} width="52" height="52" alt="" />
-          <span>
-            <strong>{link.name}</strong>
-            <small>{link.description}</small>
-          </span>
-        </a>
-      </li>
-    ))}
-  </ul>
+<BaseLayout title="友情链接" description="Flurry 的友情链接。" pageKind="listing">
+  <section class="content-card page-card" aria-labelledby="links-heading">
+    <header class="page-card-header">
+      <h1 id="links-heading">友情链接</h1>
+    </header>
+    <ul class="friend-grid">
+      {links.map((link) => (
+        <li>
+          <a class="friend-card" href={link.url}>
+            <img src={link.avatar} width="52" height="52" alt="" />
+            <span>
+              <strong>{link.name}</strong>
+              <small>{link.description}</small>
+            </span>
+            <ExternalLink class="friend-card-icon" size={18} strokeWidth={1.8} aria-hidden="true" />
+          </a>
+        </li>
+      ))}
+    </ul>
+  </section>
 </BaseLayout>
