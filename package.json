@@ -32,7 +32,7 @@
     "remark-parse": "^11.0.0",
     "tocbot": "^4.36.8",
     "unified": "^11.0.5",
-    "vue": "^3.5.39"
+    "vue": "^3.5.40"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.9",
