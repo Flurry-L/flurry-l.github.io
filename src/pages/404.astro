@@ -1,11 +1,26 @@
 ---
+import { getPublishedPosts } from '../data/posts';
 import BaseLayout from '../layouts/BaseLayout.astro';
+import { formatMonthDay } from '../utils/posts';
+
+const latestPosts = (await getPublishedPosts()).slice(0, 3);
 ---
 
 <BaseLayout title="页面未找到" description="这个页面不存在，或已经被移动。">
   <section class="not-found">
     <h1>404</h1>
-    <p>链接可能已经失效。</p>
+    <p>链接可能已经失效。试试搜索，或者看看最近的更新：</p>
     <a class="text-button" href="/">回到文章列表</a>
+
+    <ol class="not-found-latest" aria-label="最新文章">
+      {latestPosts.map((post) => (
+        <li>
+          <a class="archive-card" href={`/${post.id}/`}>
+            <span>{post.data.title}</span>
+            <time datetime={post.data.date.toISOString()}>{formatMonthDay(post.data.date)}</time>
+          </a>
+        </li>
+      ))}
+    </ol>
   </section>
 </BaseLayout>

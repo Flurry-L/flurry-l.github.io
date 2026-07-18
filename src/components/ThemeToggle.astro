@@ -1,9 +1,15 @@
 ---
 import { Moon, Sun } from '@lucide/vue';
+
+interface Props {
+  class?: string;
+}
+
+const { class: className } = Astro.props;
 ---
 
 <button
-  class="header-tool theme-toggle"
+  class:list={['header-tool theme-toggle', className]}
   type="button"
   aria-label="切换颜色主题"
   title="切换颜色主题"
@@ -16,8 +22,7 @@ import { Moon, Sun } from '@lucide/vue';
 <script>
   import { initThemeToggle } from '../scripts/theme';
 
-  const button = document.querySelector('[data-theme-toggle]');
-  if (button instanceof HTMLButtonElement) initThemeToggle(button);
+  document.addEventListener('astro:page-load', () => initThemeToggle());
 </script>
 
 <style>

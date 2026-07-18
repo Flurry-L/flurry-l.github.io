@@ -3,55 +3,6 @@
   font-family: var(--font-ui);
 }
 
-.calendar-header {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: var(--space-6);
-  margin-bottom: var(--space-4);
-}
-
-.calendar-kicker {
-  margin: 0 0 var(--space-1);
-  color: var(--accent-strong);
-  font-size: var(--type-caption);
-  font-weight: var(--weight-semibold);
-  line-height: 1.4;
-}
-
-.calendar-header h3 {
-  margin: 0;
-  font-size: var(--type-subhead);
-  line-height: 1.4;
-}
-
-.calendar-header > div > p:last-child {
-  margin: var(--space-2) 0 0;
-  color: var(--text-soft);
-  font-size: var(--type-meta);
-  line-height: 1.65;
-}
-
-.calendar-total {
-  display: grid;
-  flex: 0 0 auto;
-  margin: 0;
-  text-align: right;
-}
-
-.calendar-total strong {
-  font-size: 28px;
-  font-variant-numeric: tabular-nums;
-  line-height: 1;
-}
-
-.calendar-total span {
-  margin-top: var(--space-1);
-  color: var(--text-faint);
-  font-size: var(--type-caption);
-  line-height: 1.3;
-}
-
 .calendar-frame {
   overflow: hidden;
   border: 1px solid var(--border);
@@ -63,10 +14,9 @@
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
   gap: 4px;
-  padding: 6px;
+  padding: 4px 12px 0;
   overflow-x: auto;
   border-bottom: 1px solid var(--border);
-  background: var(--surface-muted);
 }
 
 .calendar-tabs button {
@@ -74,11 +24,12 @@
   min-height: 38px;
   padding: 0 8px;
   border: 0;
-  border-radius: 5px;
   background: transparent;
+  box-shadow: inset 0 -2px 0 transparent;
   color: var(--text-soft);
   font-size: var(--type-meta);
   cursor: pointer;
+  transition: color 160ms ease, box-shadow 160ms ease;
 }
 
 .calendar-tabs button:hover {
@@ -86,9 +37,8 @@
 }
 
 .calendar-tabs button[aria-selected='true'] {
-  background: var(--surface);
-  box-shadow: inset 0 -2px var(--accent), inset 0 0 0 1px var(--border);
-  color: var(--text);
+  box-shadow: inset 0 -2px 0 var(--accent);
+  color: var(--accent-strong);
   font-weight: var(--weight-semibold);
 }
 
@@ -350,15 +300,6 @@ button.calendar-day {
 @media (max-width: 760px) {
   .weekend-calendar {
     margin-top: var(--space-6);
-  }
-
-  .calendar-header {
-    align-items: flex-start;
-    gap: 18px;
-  }
-
-  .calendar-total strong {
-    font-size: 24px;
   }
 
   .calendar-tabs button,

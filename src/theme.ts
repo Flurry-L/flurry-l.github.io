@@ -1,6 +1,6 @@
 export const THEME_COLORS = {
-  light: '#f5f5f6',
-  dark: '#18181c',
+  light: '#f4f7fa',
+  dark: '#161b21',
 } as const;
 
 export type ColorTheme = keyof typeof THEME_COLORS;

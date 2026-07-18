@@ -7,6 +7,7 @@ const parser = unified().use(remarkParse).use(remarkMath);
 const excludedNodes = new Set([
   'code',
   'definition',
+  'heading',
   'html',
   'image',
   'imageReference',

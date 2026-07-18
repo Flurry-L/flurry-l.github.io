@@ -96,6 +96,25 @@
   margin-top: var(--space-4);
 }
 
+.prose .heading-anchor {
+  margin-left: var(--space-2);
+  color: var(--text-faint);
+  font-size: 0.8em;
+  font-weight: var(--weight-regular);
+  opacity: 0;
+  text-decoration: none;
+  transition: color 160ms ease, opacity 160ms ease;
+}
+
+.prose :is(h2, h3):hover .heading-anchor,
+.prose .heading-anchor:focus-visible {
+  opacity: 1;
+}
+
+.prose .heading-anchor:hover {
+  color: var(--accent-strong);
+}
+
 .prose a {
   color: var(--link);
   text-decoration: underline;

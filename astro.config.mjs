@@ -29,7 +29,7 @@ export default defineConfig({
       themeCssSelector: (theme) =>
         theme.type === 'dark' ? "[data-theme='dark']" : "[data-theme='light']",
       styleOverrides: {
-        codeBackground: ['#151515', '#fbfbfb'],
+        codeBackground: ['#151a21', '#f6f9fb'],
         borderRadius: '5px',
         borderWidth: '1px',
         borderColor: 'var(--code-border)',

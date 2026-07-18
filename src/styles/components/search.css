@@ -70,6 +70,37 @@
   display: none;
 }
 
+.site-search[data-variant='icon'] {
+  width: 44px;
+}
+
+.search-loader-icon {
+  display: inline-flex;
+  width: 44px;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text-soft);
+  cursor: pointer;
+  transition: background-color 160ms ease, color 160ms ease;
+}
+
+.search-loader-icon:hover,
+.search-loader-icon:focus-visible {
+  background: var(--surface-muted);
+  color: var(--accent-strong);
+}
+
+/* The icon variant only borrows the trigger's openModal() API — pagefind's
+   own text button must never appear next to our icon. */
+:is(*, #\#):is(*, #\#):is(*, #\#) .site-search[data-variant='icon'] .pf-trigger-btn {
+  display: none;
+}
+
 :is(*, #\#):is(*, #\#):is(*, #\#) .site-search .pf-trigger-btn {
   width: 100%;
   min-width: 0;

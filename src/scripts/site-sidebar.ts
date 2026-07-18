@@ -9,7 +9,7 @@ export function initSiteSidebar() {
     document.querySelectorAll<HTMLElement>('[data-sidebar-toggle]'),
   );
 
-  if (!sidebar || !scrim || triggers.length === 0) return;
+  if (!sidebar || !scrim || triggers.length === 0) return undefined;
 
   const desktop = window.matchMedia(DESKTOP_QUERY);
   let isOpen = false;
@@ -109,4 +109,14 @@ export function initSiteSidebar() {
   document.addEventListener('keydown', handleKeydown);
   desktop.addEventListener('change', handleBreakpointChange);
   applyViewportState();
+
+  return () => {
+    for (const trigger of triggers) {
+      trigger.removeEventListener('click', handleTriggerClick);
+    }
+    scrim.removeEventListener('click', handleScrimClick);
+    document.removeEventListener('keydown', handleKeydown);
+    desktop.removeEventListener('change', handleBreakpointChange);
+    document.body.classList.remove(BODY_OPEN_CLASS);
+  };
 }

@@ -23,7 +23,7 @@ export function initPostToc() {
     || !compactFallback
     || !tocRoot
     || !prose
-  ) return;
+  ) return undefined;
 
   const compactMedia = matchMedia('(max-width: 1279px)');
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)');
@@ -67,27 +67,33 @@ export function initPostToc() {
     if (frame === 0) frame = requestAnimationFrame(update);
   };
 
-  compactToc.addEventListener('toggle', () => {
+  const handleCompactToggle = () => {
     if (compactToc.open) document.dispatchEvent(new Event('scroll'));
     schedule();
-  });
-  compactToc.addEventListener('keydown', (event) => {
+  };
+  const handleCompactKeydown = (event: KeyboardEvent) => {
     if (event.key !== 'Escape') return;
     compactToc.open = false;
     compactToc.querySelector<HTMLElement>('summary')?.focus();
-  });
-  document.addEventListener('pointerdown', (event) => {
+  };
+  const handleDocumentPointerdown = (event: PointerEvent) => {
     if (compactToc.open && event.target instanceof Node && !compactToc.contains(event.target)) {
       compactToc.open = false;
     }
-  });
+  };
+  const handleWindowResize = () => schedule();
 
+  compactToc.addEventListener('toggle', handleCompactToggle);
+  compactToc.addEventListener('keydown', handleCompactKeydown);
+  document.addEventListener('pointerdown', handleDocumentPointerdown);
   window.addEventListener('scroll', schedule, { passive: true });
-  window.addEventListener('resize', () => {
-    schedule();
-  });
+  window.addEventListener('resize', handleWindowResize);
   compactMedia.addEventListener('change', moveTocRoot);
-  if ('ResizeObserver' in window) new ResizeObserver(schedule).observe(prose);
+  let proseObserver: ResizeObserver | undefined;
+  if ('ResizeObserver' in window) {
+    proseObserver = new ResizeObserver(schedule);
+    proseObserver.observe(prose);
+  }
   void document.fonts?.ready.then(schedule);
 
   moveTocRoot();
@@ -156,4 +162,19 @@ export function initPostToc() {
   compactToc.dataset.enhanced = 'true';
   syncAriaCurrent();
   schedule();
+
+  return () => {
+    window.cancelAnimationFrame(frame);
+    frame = 0;
+    window.clearTimeout(scrollBehaviorResetTimer);
+    compactToc.removeEventListener('toggle', handleCompactToggle);
+    compactToc.removeEventListener('keydown', handleCompactKeydown);
+    document.removeEventListener('pointerdown', handleDocumentPointerdown);
+    window.removeEventListener('scroll', schedule);
+    window.removeEventListener('resize', handleWindowResize);
+    compactMedia.removeEventListener('change', moveTocRoot);
+    proseObserver?.disconnect();
+    activeStateObserver.disconnect();
+    tocbot.destroy();
+  };
 }

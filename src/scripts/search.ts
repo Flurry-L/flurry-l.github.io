@@ -3,37 +3,46 @@ interface PagefindModalTriggerElement extends HTMLElement {
 }
 
 export function initSearch(root: HTMLElement) {
+  if (root.dataset.initialized === 'true') return;
+  root.dataset.initialized = 'true';
+
   const loader = root.querySelector<HTMLButtonElement>('[data-search-loader]');
   const label = loader?.querySelector<HTMLElement>('[data-search-loader-label]');
   const trigger = root.querySelector<PagefindModalTriggerElement>('pagefind-modal-trigger');
-  if (!loader || !label || !trigger) return;
+  if (!loader || !trigger) return;
 
+  // In the icon variant the pagefind trigger button is hidden by CSS, so the
+  // loader must stay visible and simply reopen the modal on later clicks.
+  const hideLoaderWhenReady = root.dataset.variant !== 'icon';
   let loadPromise: Promise<unknown> | undefined;
-
-  const loadSearch = async () => {
-    loadPromise ??= import('@pagefind/component-ui');
-    await loadPromise;
-    await customElements.whenDefined('pagefind-modal-trigger');
-  };
+  let loaded = false;
 
   loader.addEventListener('click', async () => {
+    if (loaded) {
+      trigger.openModal();
+      return;
+    }
     if (loader.disabled) return;
     loader.disabled = true;
     loader.setAttribute('aria-busy', 'true');
-    label.textContent = '正在加载';
+    if (label) label.textContent = '正在加载';
+
+    loadPromise ??= import('@pagefind/component-ui');
 
     try {
-      await loadSearch();
+      await loadPromise;
+      await customElements.whenDefined('pagefind-modal-trigger');
+      loaded = true;
+      loader.disabled = false;
       loader.setAttribute('aria-busy', 'false');
-      loader.hidden = true;
+      if (hideLoaderWhenReady) loader.hidden = true;
       trigger.openModal();
     } catch {
       loadPromise = undefined;
-      loader.hidden = false;
       loader.disabled = false;
       loader.setAttribute('aria-busy', 'false');
       loader.title = '搜索加载失败，点击重试';
-      label.textContent = '重试搜索';
+      if (label) label.textContent = '重试搜索';
     }
   });
 }

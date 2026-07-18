@@ -62,5 +62,10 @@ export function initHitokoto(root: HTMLButtonElement) {
   };
 
   root.addEventListener('click', () => void refresh(true));
-  void refresh(false);
+
+  // Defer the initial refresh so first paint stays stable.
+  const scheduleInitial = 'requestIdleCallback' in window
+    ? (cb: () => void) => window.requestIdleCallback(cb, { timeout: 3000 })
+    : (cb: () => void) => window.setTimeout(cb, 1200);
+  scheduleInitial(() => void refresh(false));
 }

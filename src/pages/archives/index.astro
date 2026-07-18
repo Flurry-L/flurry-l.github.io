@@ -24,7 +24,7 @@ const groups = Object.entries(Object.groupBy(posts, (post) => formatYear(post.da
         <ol>
           {yearPosts?.map((post) => (
             <li>
-              <a class="content-card archive-card" href={`/${post.id}/`}>
+              <a class="archive-card" href={`/${post.id}/`}>
                 <span>{post.data.title}</span>
                 <time datetime={post.data.date.toISOString()}>{formatMonthDay(post.data.date)}</time>
               </a>

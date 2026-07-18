@@ -6,11 +6,6 @@
   align-self: start;
   grid-row: 1;
   grid-column: 2;
-  padding: var(--space-4);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  background: var(--surface);
-  box-shadow: var(--card-shadow);
 }
 
 .post-toc-header {

@@ -11,16 +11,14 @@ interface Props {
 const { post } = Astro.props;
 ---
 
-<article class="content-card post-card">
+<article class="post-card">
   <h2><a class="post-card-link" href={`/${post.id}/`}>{post.data.title}</a></h2>
   <div class="post-meta post-card-facts">
     <time class="post-meta-item" datetime={post.data.date.toISOString()}>{formatDate(post.data.date)}</time>
     <span class="post-meta-item">{getReadingTime(post)} 分钟</span>
+    {post.data.tags.map((tag) => (
+      <a class="post-meta-item post-card-tag" href={`/tags/${encodeURIComponent(tag)}/`}>#{tag}</a>
+    ))}
   </div>
   <p>{getExcerpt(post)}</p>
-  {post.data.tags.length > 0 && (
-    <nav class="post-card-tags" aria-label={`《${post.data.title}》的标签`}>
-      {post.data.tags.map((tag) => <a href={`/tags/${encodeURIComponent(tag)}/`}>#{tag}</a>)}
-    </nav>
-  )}
 </article>

@@ -1,6 +1,7 @@
 ---
 title: 关于重要性采样的误解
 date: 2025-02-04T17:45:14+08:00
+math: true
 tags:
     - render
     - math

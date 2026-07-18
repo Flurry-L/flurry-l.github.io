@@ -26,7 +26,6 @@ const idPrefix = computed(() => {
   const safeId = source.replace(/[^a-zA-Z0-9_-]+/g, '-').replace(/^-+|-+$/g, '');
   return `weekend-calendar-${safeId || 'instance'}`;
 });
-const headingId = computed(() => `${idPrefix.value}-heading`);
 const selectedMonthKey = ref(model.value.months[0]?.key ?? '');
 const expandedMonths = ref(new Set<string>());
 const overflowingMonths = ref(new Set<string>());
@@ -213,21 +212,9 @@ onBeforeUnmount(() => {
   <section
     ref="rootElement"
     class="weekend-calendar"
-    :aria-labelledby="headingId"
+    aria-label="周末日程"
     data-floating-controls-clear
   >
-    <header class="calendar-header">
-      <div>
-        <p class="calendar-kicker">{{ model.rangeLabel }}</p>
-        <h3 :id="headingId">周末日程</h3>
-        <p>{{ summary }}</p>
-      </div>
-      <p class="calendar-total">
-        <strong>{{ model.totalEvents }}</strong>
-        <span>条记录</span>
-      </p>
-    </header>
-
     <div v-if="model.months.length > 0" class="calendar-frame">
       <div class="calendar-tabs" role="tablist" aria-label="选择月份" aria-orientation="horizontal">
         <button

@@ -23,11 +23,11 @@
 
 .archive-card {
   display: grid;
-  min-height: 96px;
-  align-content: space-between;
-  gap: var(--space-3);
-  padding: 14px var(--space-4);
-  transition: border-color 160ms ease, box-shadow 160ms ease, color 160ms ease;
+  align-content: start;
+  gap: var(--space-1);
+  padding: var(--space-4) 0;
+  border-top: 1px solid var(--border);
+  transition: color 160ms ease;
 }
 
 .archive-card > span {
@@ -36,19 +36,18 @@
   font-weight: var(--weight-medium);
   line-height: 1.55;
   overflow-wrap: anywhere;
+  transition: color 160ms ease;
 }
 
 .archive-card time {
-  color: var(--text-soft);
-  font-size: var(--type-meta);
+  color: var(--text-faint);
+  font-size: var(--type-caption);
   font-variant-numeric: tabular-nums;
   line-height: 1.5;
 }
 
 .archive-card:hover,
 .archive-card:focus-visible {
-  border-color: var(--accent);
-  box-shadow: var(--card-shadow-active);
   color: var(--accent-strong);
 }
 
@@ -102,10 +101,22 @@
   line-height: 1.4;
 }
 
+.tag-overview {
+  margin-top: var(--space-8);
+}
+
+.tag-overview .section-heading h2 a {
+  transition: color 160ms ease;
+}
+
+.tag-overview .section-heading h2 a:hover {
+  color: var(--accent-strong);
+}
+
 .friend-grid {
   display: grid;
-  max-width: var(--card-content-measure);
-  margin: var(--space-5) auto 0;
+  max-width: var(--reading-measure);
+  margin: var(--space-5) 0 0;
   padding: 0;
   list-style: none;
 }
@@ -196,6 +207,14 @@
 .not-found > p {
   margin: 18px 0 28px;
   color: var(--text-soft);
+}
+
+.not-found-latest {
+  display: grid;
+  margin: var(--space-8) 0 0;
+  padding: 0;
+  gap: var(--space-3);
+  list-style: none;
 }
 
 .text-button {

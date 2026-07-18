@@ -1,6 +1,7 @@
 ---
 title: 高斯过程的粗略理解
 date: 2024-10-21T00:00:00+08:00
+math: true
 tags: 
    - math
    - render

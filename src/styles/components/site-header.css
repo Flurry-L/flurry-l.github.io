@@ -44,7 +44,9 @@
 
 .site-identity strong {
   overflow: hidden;
-  font-size: var(--type-copy);
+  font-size: 18px;
+  font-weight: var(--weight-semibold);
+  letter-spacing: -0.01em;
   line-height: 1.35;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -86,7 +88,9 @@
   border-radius: 1px;
   background: var(--accent);
   content: '';
-  opacity: 0;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 200ms ease;
 }
 
 .site-nav a:hover,
@@ -98,8 +102,36 @@
   font-weight: var(--weight-semibold);
 }
 
+.site-nav a:hover::after {
+  transform: scaleX(1);
+  opacity: 0.45;
+}
+
 .site-nav a.is-active::after {
   opacity: 1;
+  transform: scaleX(1);
+}
+
+.site-header-tool {
+  display: inline-flex;
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text-soft);
+  cursor: pointer;
+  transition: background-color 160ms ease, color 160ms ease;
+}
+
+.site-header-tool:hover,
+.site-header-tool:focus-visible {
+  background: var(--surface-muted);
+  color: var(--accent-strong);
 }
 
 .site-sidebar-toggle {

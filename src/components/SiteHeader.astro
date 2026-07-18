@@ -2,6 +2,8 @@
 import { Menu, X } from '@lucide/vue';
 import '../styles/components/site-header.css';
 import { NAV_ITEMS, SITE } from '../site';
+import Search from './Search.astro';
+import ThemeToggle from './ThemeToggle.astro';
 
 interface Props {
   activeSection?: 'articles';
@@ -18,7 +20,6 @@ const isActive = (href: string) => href === '/'
 <header id="top" class="site-header" tabindex="-1">
   <div class="site-header-inner">
     <a class="site-identity" href="/" aria-label={`${SITE.title} 首页`}>
-      <img src={SITE.avatar} width="40" height="40" alt="Flurry 的头像" />
       <strong>{SITE.title}</strong>
     </a>
 
@@ -34,6 +35,8 @@ const isActive = (href: string) => href === '/'
           </a>
         ))}
       </nav>
+      <Search variant="icon" />
+      <ThemeToggle class="site-header-tool" />
       <button
         class="site-sidebar-toggle"
         type="button"

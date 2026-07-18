@@ -1,6 +1,7 @@
 ---
 title: 基于渲染的帧生成
 date: 2024-12-16T11:35:41+08:00
+math: true
 tags: 
   - render
   - research

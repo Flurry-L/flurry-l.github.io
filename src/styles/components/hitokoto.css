@@ -2,23 +2,27 @@
   position: relative;
   display: grid;
   width: 100%;
-  min-height: 96px;
   height: auto;
   appearance: none;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: var(--space-1) var(--space-2);
   align-content: center;
-  margin: var(--space-3) auto 0;
-  padding: var(--space-3) var(--space-6);
+  margin: var(--space-5) 0 0;
+  padding: var(--space-4) 0 0;
+  border: 0;
+  border-top: 1px solid var(--border);
+  background: transparent;
   color: var(--reading-text);
   cursor: pointer;
   text-align: left;
-  transition: border-color 160ms ease, background-color 160ms ease;
 }
 
-.hitokoto:hover {
-  border-color: var(--control-border);
-  background: var(--surface-muted);
+.hitokoto .hitokoto-text {
+  transition: color 160ms ease;
+}
+
+.hitokoto:hover .hitokoto-text {
+  color: var(--accent-strong);
 }
 
 .hitokoto[aria-disabled='true'] {
@@ -26,14 +30,18 @@
 }
 
 .hitokoto-text {
-  display: block;
+  display: -webkit-box;
   width: 100%;
+  max-height: calc(3 * 1.6em);
   grid-column: 1 / -1;
+  overflow: hidden;
   color: var(--reading-text);
   font-family: var(--font-content);
   font-size: var(--type-meta);
   line-height: 1.6;
   overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
 }
 
 .hitokoto-from {
@@ -74,11 +82,10 @@
 }
 
 @media (max-width: 1023.98px) {
-  .hitokoto {
+  .site-sidebar .hitokoto {
     width: var(--sidebar-content-measure);
-    margin: 0 auto var(--space-7);
-    padding-right: var(--space-4);
-    padding-left: var(--space-4);
+    margin: var(--space-6) auto 0;
+    padding-bottom: var(--space-2);
   }
 }
 

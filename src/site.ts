@@ -5,7 +5,7 @@ export const SITE = {
   locale: 'zh-CN',
   timeZone: 'Asia/Shanghai',
   url: 'https://blog.flurry.top',
-  avatar: 'https://q2.qlogo.cn/headimg_dl?dst_uin=1748087899&spec=100',
+  avatar: '/avatar.jpg',
   email: 'mailto:flurry.liao@gmail.com',
   github: 'https://github.com/Flurry-L',
 } as const;

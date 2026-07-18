@@ -72,3 +72,17 @@ export function getTagCounts(posts: Post[]) {
     .map(([name, count]) => ({ name, count }))
     .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
 }
+
+/** Posts sharing the most tags with the given post, newest first on ties. */
+export function getRelatedPosts(post: Post, posts: Post[], max = 3) {
+  return posts
+    .filter((candidate) => candidate.id !== post.id)
+    .map((candidate) => ({
+      candidate,
+      shared: candidate.data.tags.filter((tag) => post.data.tags.includes(tag)).length,
+    }))
+    .filter(({ shared }) => shared > 0)
+    .sort((a, b) => b.shared - a.shared || b.candidate.data.date.getTime() - a.candidate.data.date.getTime())
+    .slice(0, max)
+    .map(({ candidate }) => candidate);
+}

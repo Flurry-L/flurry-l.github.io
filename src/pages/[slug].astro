@@ -4,7 +4,7 @@ import { getPublishedPosts } from '../data/posts';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PostLayout from '../layouts/PostLayout.astro';
 import type { Post } from '../utils/posts';
-import { getExcerpt } from '../utils/posts';
+import { getExcerpt, getRelatedPosts } from '../utils/posts';
 
 export async function getStaticPaths() {
   const posts = await getPublishedPosts();
@@ -14,6 +14,7 @@ export async function getStaticPaths() {
       post,
       newer: index > 0 ? posts[index - 1] : undefined,
       older: index < posts.length - 1 ? posts[index + 1] : undefined,
+      related: getRelatedPosts(post, posts),
     },
   }));
 }
@@ -22,14 +23,15 @@ interface Props {
   post: Post;
   newer?: Post;
   older?: Post;
+  related: Post[];
 }
 
-const { post, newer, older } = Astro.props;
+const { post, newer, older, related } = Astro.props;
 const { Content, headings } = await render(post);
 ---
 
-<BaseLayout title={post.data.title} description={getExcerpt(post)} pageKind="article">
-  <PostLayout post={post} headings={headings} newer={newer} older={older}>
+<BaseLayout title={post.data.title} description={getExcerpt(post)} image={`/og/${post.id}.png`} pageKind="article" math={post.data.math}>
+  <PostLayout post={post} headings={headings} newer={newer} older={older} related={related}>
     <Content />
   </PostLayout>
 </BaseLayout>

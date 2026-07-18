@@ -28,6 +28,15 @@ const isConfigured = Boolean(repo && repoId && category && categoryId);
   >
     <h2 id="comments-heading">评论</h2>
     <div class="giscus">
+      <script is:inline>
+        // Set the initial theme before the giscus loader runs, so dark-mode
+        // readers never see a light iframe flash.
+        const loader = document.currentScript?.parentElement?.querySelector('script[src*="giscus"]');
+        loader?.setAttribute(
+          'data-theme',
+          document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light',
+        );
+      </script>
       <script
         is:inline
         src="https://giscus.app/client.js"

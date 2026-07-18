@@ -4,7 +4,7 @@ import '../styles/components/hitokoto.css';
 ---
 
 <button
-  class="content-card hitokoto"
+  class="hitokoto"
   type="button"
   data-hitokoto
   data-state="idle"
@@ -22,7 +22,9 @@ import '../styles/components/hitokoto.css';
 <script>
   import { initHitokoto } from '../scripts/hitokoto';
 
-  document.querySelectorAll<HTMLButtonElement>('[data-hitokoto]').forEach((root) => {
-    initHitokoto(root);
+  document.addEventListener('astro:page-load', () => {
+    document.querySelectorAll<HTMLButtonElement>('[data-hitokoto]').forEach((root) => {
+      initHitokoto(root);
+    });
   });
 </script>

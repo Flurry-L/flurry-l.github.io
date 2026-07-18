@@ -26,7 +26,9 @@ const posts = defineCollection({
   schema: z.object({
     title: z.string(),
     date: z.coerce.date(),
+    updated: z.coerce.date().optional(),
     description: z.string().optional(),
+    math: z.boolean().optional().default(false),
     tags,
     draft: z.boolean().optional().default(false),
     weekendCalendar: weekendCalendarSchema.optional(),

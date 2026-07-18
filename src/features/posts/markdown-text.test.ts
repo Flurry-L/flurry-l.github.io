@@ -13,7 +13,7 @@ describe('markdownToPlainText', () => {
     ].join('\n');
 
     expect(markdownToPlainText(markdown)).toBe(
-      'Heading Read strong text, inlineCode, and a link. first item second item',
+      'Read strong text, inlineCode, and a link. first item second item',
     );
   });
 
