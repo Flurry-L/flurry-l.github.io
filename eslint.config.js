@@ -1,64 +1,59 @@
-import js from '@eslint/js';
-import astro from 'eslint-plugin-astro';
-import vue from 'eslint-plugin-vue';
-import globals from 'globals';
-import tseslint from 'typescript-eslint';
+import js from "@eslint/js";
+import pluginVue from "eslint-plugin-vue";
+import globals from "globals";
+import tseslint from "typescript-eslint";
 
-export default [
+export default tseslint.config(
   {
-    ignores: ['.astro/**', 'dist/**', 'node_modules/**'],
+    ignores: [
+      "dist/",
+      "node_modules/",
+      "public/",
+      ".astro/",
+      "draft/",
+      "**/*.css",
+    ],
   },
   js.configs.recommended,
   ...tseslint.configs.recommended,
-  ...vue.configs['flat/recommended'],
-  ...astro.configs['flat/recommended'],
-  ...astro.configs['flat/jsx-a11y-recommended'],
+  ...pluginVue.configs["flat/recommended"],
   {
-    files: ['**/*.{js,mjs,cjs,ts,mts,cts,vue,astro}'],
-    languageOptions: {
-      globals: {
-        ...globals.browser,
-        ...globals.node,
-      },
-    },
-    rules: {
-      'no-console': ['warn', { allow: ['warn', 'error'] }],
-    },
-  },
-  {
-    files: ['**/*.vue'],
+    files: ["**/*.vue"],
     languageOptions: {
       parserOptions: {
-        extraFileExtensions: ['.vue'],
-        parser: tseslint.parser,
-      },
-    },
-    rules: {
-      'vue/max-attributes-per-line': 'off',
-      'vue/singleline-html-element-content-newline': 'off',
-    },
-  },
-  {
-    files: ['**/*.astro'],
-    languageOptions: {
-      parserOptions: {
-        extraFileExtensions: ['.astro'],
         parser: tseslint.parser,
       },
     },
   },
   {
-    files: ['**/*.{ts,mts,cts,vue,astro}'],
-    rules: {
-      'no-undef': 'off',
-      '@typescript-eslint/no-unused-vars': [
-        'error',
-        {
-          argsIgnorePattern: '^_',
-          caughtErrorsIgnorePattern: '^_',
-          varsIgnorePattern: '^_',
-        },
-      ],
+    files: [
+      "scripts/**/*.mjs",
+      "vite/**/*.mjs",
+      "*.config.{js,ts}",
+      "vite.config.ts",
+    ],
+    languageOptions: {
+      globals: globals.node,
     },
   },
-];
+  {
+    files: ["src/**/*.{ts,vue}", "tests/**/*.ts"],
+    languageOptions: {
+      globals: globals.browser,
+    },
+  },
+  {
+    rules: {
+      "vue/multi-word-component-names": "off",
+      // TypeScript already checks undefined identifiers.
+      "no-undef": "off",
+      // Formatting is Prettier's job.
+      "vue/max-attributes-per-line": "off",
+      "vue/singleline-html-element-content-newline": "off",
+      "vue/html-closing-bracket-newline": "off",
+      "vue/html-indent": "off",
+      "vue/first-attribute-linebreak": "off",
+      "vue/html-self-closing": "off",
+    },
+  }
+);

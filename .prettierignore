@@ -1,0 +1,14 @@
+# Build output & dependencies
+dist/
+node_modules/
+
+# Generated assets
+public/katex/
+public/og/
+public/pagefind/
+
+# Blog content is authored by hand, never reformat it
+src/content/
+
+# Lockfile churn
+package-lock.json

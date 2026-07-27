@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Flurry's Blog</title>
+    <meta name="description" content="记录技术和生活。" />
+    <meta name="author" content="Flurry" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/katex/katex.min.css" />
+    <link
+      rel="alternate"
+      type="application/rss+xml"
+      title="Flurry's Blog"
+      href="/rss.xml"
+    />
+    <link rel="sitemap" type="application/xml" href="/sitemap.xml" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Flurry's Blog" />
+    <meta property="og:title" content="Flurry's Blog" />
+    <meta property="og:description" content="记录技术和生活。" />
+    <meta property="og:url" content="https://blog.flurry.top/" />
+    <meta property="og:image" content="https://blog.flurry.top/og.jpg" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <script>
+      (function () {
+        var theme = localStorage.getItem("theme");
+        if (
+          theme === "dark" ||
+          (!theme && window.matchMedia("(prefers-color-scheme: dark)").matches)
+        ) {
+          document.documentElement.classList.add("dark");
+        }
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

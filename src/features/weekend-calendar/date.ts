@@ -25,9 +25,11 @@ export function parseCalendarDate(value: string): CalendarDateParts {
   };
   const date = toUtcDate(parts);
 
-  if (date.getUTCFullYear() !== parts.year
-    || date.getUTCMonth() !== parts.month - 1
-    || date.getUTCDate() !== parts.day) {
+  if (
+    date.getUTCFullYear() !== parts.year ||
+    date.getUTCMonth() !== parts.month - 1 ||
+    date.getUTCDate() !== parts.day
+  ) {
     throw new TypeError(`Invalid calendar date: ${value}`);
   }
 

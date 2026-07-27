@@ -1,0 +1,228 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --background: #ffffff;
+  --foreground: #213547;
+  --muted: #f2f6f3;
+  --muted-foreground: #5f6f66;
+  --border: #dde8e1;
+  --accent: #42b883;
+  --accent-hover: #33a06f;
+  --font-google-sans-code:
+    ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono",
+    monospace;
+}
+
+.dark {
+  --background: #151917;
+  --foreground: #e6ede9;
+  --muted: #1e2420;
+  --muted-foreground: #98a69d;
+  --border: #2e3833;
+  --accent: #42d392;
+  --accent-hover: #6fe0ae;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-border: var(--border);
+  --color-accent: var(--accent);
+  --color-accent-hover: var(--accent-hover);
+  --font-sans:
+    ui-sans-serif, -apple-system, "PingFang SC", "Hiragino Sans GB",
+    "Microsoft YaHei", "Noto Sans CJK SC", "Source Han Sans SC", sans-serif;
+  --font-mono:
+    ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono",
+    monospace;
+}
+
+body {
+  @apply bg-background text-foreground font-sans antialiased;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+/* Playful nudge on icon buttons (header, floating TOC). */
+.icon-wobble svg {
+  transition: transform 0.2s ease;
+}
+
+.icon-wobble:hover svg {
+  transform: rotate(-10deg) scale(1.12);
+}
+
+/* Reading experience: generous line height for Chinese text, theme-aware
+   typography colors. */
+.prose {
+  --tw-prose-body: var(--foreground);
+  --tw-prose-headings: var(--foreground);
+  --tw-prose-lead: var(--muted-foreground);
+  --tw-prose-links: var(--accent);
+  --tw-prose-bold: var(--foreground);
+  --tw-prose-counters: var(--muted-foreground);
+  --tw-prose-bullets: var(--muted-foreground);
+  --tw-prose-hr: var(--border);
+  --tw-prose-quotes: var(--muted-foreground);
+  --tw-prose-quote-borders: var(--accent);
+  --tw-prose-captions: var(--muted-foreground);
+  --tw-prose-code: var(--foreground);
+  --tw-prose-pre-code: var(--foreground);
+  --tw-prose-pre-bg: var(--muted);
+  --tw-prose-th-borders: var(--border);
+  --tw-prose-td-borders: var(--border);
+  line-height: 1.9;
+}
+
+.prose :where(h2, h3) {
+  scroll-margin-top: 5.5rem;
+}
+
+.prose a {
+  text-underline-offset: 3px;
+}
+
+.prose :where(code):not(:where(pre code))::before,
+.prose :where(code):not(:where(pre code))::after {
+  content: none;
+}
+
+.prose :where(code):not(:where(pre code)) {
+  color: var(--accent-hover);
+  font-weight: 500;
+}
+
+.prose img {
+  margin-inline: auto;
+  border-radius: 0.5rem;
+}
+
+/* Shiki dual themes: vitesse-light by default, vitesse-dark under .dark. */
+.shiki,
+.shiki span {
+  color: var(--shiki-light);
+}
+
+.shiki {
+  background-color: var(--shiki-light-bg);
+}
+
+.dark .shiki,
+.dark .shiki span {
+  color: var(--shiki-dark);
+}
+
+.dark .shiki {
+  background-color: var(--shiki-dark-bg);
+}
+
+.prose pre.shiki {
+  border: 1px solid var(--border);
+  background-color: var(--shiki-light-bg);
+}
+
+.dark .prose pre.shiki {
+  background-color: var(--shiki-dark-bg);
+}
+
+.prose pre.shiki code {
+  color: inherit;
+  background-color: transparent;
+}
+
+/* Copy button injected by useCodeCopy into every code block. */
+.prose pre {
+  position: relative;
+}
+
+.code-copy-button {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  background: var(--background);
+  color: var(--muted-foreground);
+  padding: 0.15rem 0.5rem;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  opacity: 0;
+  transition:
+    opacity 0.15s,
+    color 0.15s;
+}
+
+.code-copy-button:hover {
+  color: var(--accent);
+}
+
+.prose pre:hover .code-copy-button,
+.code-copy-button:focus-visible {
+  opacity: 1;
+}
+
+/* Pagefind UI restyled to match the blog's look. */
+:root {
+  --pagefind-ui-scale: 0.9;
+  --pagefind-ui-primary: var(--accent);
+  --pagefind-ui-text: var(--foreground);
+  --pagefind-ui-background: var(--background);
+  --pagefind-ui-border: var(--border);
+  --pagefind-ui-border-width: 1px;
+  --pagefind-ui-border-radius: 0.5rem;
+  --pagefind-ui-font: inherit;
+}
+
+#pagefind-search .pagefind-ui__search-input {
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  background: var(--muted);
+  color: var(--foreground);
+  outline: none;
+}
+
+#pagefind-search .pagefind-ui__search-input:focus {
+  border-color: var(--accent);
+}
+
+#pagefind-search .pagefind-ui__search-clear {
+  background: transparent;
+  color: var(--muted-foreground);
+}
+
+#pagefind-search .pagefind-ui__result {
+  border-color: var(--border);
+}
+
+#pagefind-search .pagefind-ui__result-link {
+  color: var(--foreground);
+}
+
+#pagefind-search .pagefind-ui__result-link:hover {
+  color: var(--accent);
+}
+
+#pagefind-search .pagefind-ui__result-excerpt {
+  color: var(--muted-foreground);
+}
+
+#pagefind-search mark {
+  border-radius: 0.125rem;
+  background: color-mix(in srgb, var(--accent) 25%, transparent);
+  color: inherit;
+}
+
+/* KaTeX display equations scroll horizontally on narrow screens. */
+.katex-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding-block: 0.25rem;
+}

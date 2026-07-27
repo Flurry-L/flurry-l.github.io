@@ -1,20 +1,49 @@
-import { z } from 'astro/zod';
-import { CALENDAR_DATE_PATTERN, isCalendarDate } from './date';
+import { isCalendarDate } from "./date";
 
-export const calendarDateSchema = z
-  .string()
-  .regex(CALENDAR_DATE_PATTERN, 'Date must use YYYY-MM-DD')
-  .refine(isCalendarDate, 'Invalid calendar date');
+export interface WeekendCalendarEvent {
+  date: string;
+  text: string;
+}
 
-export const weekendCalendarEventSchema = z.object({
-  date: calendarDateSchema,
-  text: z.string().trim().min(1, 'Calendar event text cannot be empty'),
-});
+export interface WeekendCalendarInput {
+  summary: string;
+  events: WeekendCalendarEvent[];
+}
 
-export const weekendCalendarSchema = z.object({
-  summary: z.string().trim().min(1, 'Calendar summary cannot be empty'),
-  events: z.array(weekendCalendarEventSchema).min(1, 'Calendar must contain an event'),
-});
+/**
+ * Validates weekend-calendar frontmatter data and normalizes authored copy
+ * (trims surrounding whitespace). Throws a TypeError on invalid input.
+ * Kept dependency-free; mirrored by the build-time validation in
+ * vite/plugins/markdown.mjs.
+ */
+export function parseWeekendCalendar(input: unknown): WeekendCalendarInput {
+  if (typeof input !== "object" || input === null) {
+    throw new TypeError("Calendar must be an object");
+  }
 
-export type WeekendCalendarEvent = z.infer<typeof weekendCalendarEventSchema>;
-export type WeekendCalendarInput = z.infer<typeof weekendCalendarSchema>;
+  const { summary, events } = input as Record<string, unknown>;
+
+  if (typeof summary !== "string" || summary.trim() === "") {
+    throw new TypeError("Calendar summary cannot be empty");
+  }
+  if (!Array.isArray(events) || events.length === 0) {
+    throw new TypeError("Calendar must contain an event");
+  }
+
+  return {
+    summary: summary.trim(),
+    events: events.map(event => {
+      if (typeof event !== "object" || event === null) {
+        throw new TypeError("Calendar event must be an object");
+      }
+      const { date, text } = event as Record<string, unknown>;
+      if (typeof date !== "string" || !isCalendarDate(date)) {
+        throw new TypeError(`Invalid calendar date: ${String(date)}`);
+      }
+      if (typeof text !== "string" || text.trim() === "") {
+        throw new TypeError("Calendar event text cannot be empty");
+      }
+      return { date, text: text.trim() };
+    }),
+  };
+}
