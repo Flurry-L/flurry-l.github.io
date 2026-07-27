@@ -1,6 +1,7 @@
 ---
 title: 重装 windows 之后
-date: 2025-02-07T17:02:21+08:00
+pubDatetime: 2025-02-07T17:02:21+08:00
+description: 记录重装 Windows 系统后一周内安装的软件。
 tags: tips
 ---
 

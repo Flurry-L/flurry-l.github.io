@@ -1,6 +1,7 @@
 ---
 title: The Cherno Cpp
-date: 2026-02-20T00:10:56+08:00
+pubDatetime: 2026-02-20T00:10:56+08:00
+description: 观看 The Cherno C++ 系列视频时记录的笔记。
 tags:
 ---
 

@@ -1,6 +1,7 @@
 ---
 title: 什么都想做的半年
-date: 2026-07-10T22:33:10+08:00
+pubDatetime: 2026-07-10T22:33:10+08:00
+description: 回顾学校生活结束后的半年，以及工作、兴趣和周末被各种计划填满的生活。
 tags:
     - life
 weekendCalendar:

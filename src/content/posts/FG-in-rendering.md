@@ -1,6 +1,7 @@
 ---
 title: 基于渲染的帧生成
-date: 2024-12-16T11:35:41+08:00
+pubDatetime: 2024-12-16T11:35:41+08:00
+description: 只有自己才看得懂的帧生成相关工作总结。
 math: true
 tags: 
   - render

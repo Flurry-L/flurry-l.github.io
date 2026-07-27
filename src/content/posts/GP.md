@@ -1,6 +1,7 @@
 ---
 title: 高斯过程的粗略理解
-date: 2024-10-21T00:00:00+08:00
+pubDatetime: 2024-10-21T00:00:00+08:00
+description: 阅读随机几何光传输论文时，对高斯过程做的粗略理解和记录。
 math: true
 tags: 
    - math

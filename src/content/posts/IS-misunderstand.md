@@ -1,6 +1,7 @@
 ---
 title: 关于重要性采样的误解
-date: 2025-02-04T17:45:14+08:00
+pubDatetime: 2025-02-04T17:45:14+08:00
+description: 记录我对重要性采样中采样分布、目标分布和无偏估计的理解。
 math: true
 tags:
     - render

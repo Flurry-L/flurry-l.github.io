@@ -1,6 +1,7 @@
 ---
 title: 第一次租房
-date: 2025-03-11T21:42:20+08:00
+pubDatetime: 2025-03-11T21:42:20+08:00
+description: 第一次租房独居时遇到的问题和经验记录。
 tags: 
     - life
     - tips

@@ -1,6 +1,7 @@
 ---
 title: Nonsense
-date: 2024-09-30T02:00:00+08:00
+pubDatetime: 2024-09-30T02:00:00+08:00
+description: 成为研究生后的第一个月，也是重建博客后的首次写作。
 tags: 
     - misc
 ---

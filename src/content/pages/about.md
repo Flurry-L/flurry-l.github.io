@@ -1,6 +1,6 @@
 ---
 title: 关于我
-date: 2025-01-23T14:26:46+08:00
+description: 关于 Flurry。
 ---
 
 USTC PB2000 / SA24229，渲染苦手，ai 农场主。
