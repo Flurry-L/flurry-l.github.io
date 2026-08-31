@@ -18,7 +18,7 @@
     "validate": "npm run lint && npm test && npm run build"
   },
   "dependencies": {
-    "vue": "^3.5.0",
+    "vue": "^3.5.42",
     "vue-router": "^4.5.0"
   },
   "devDependencies": {
