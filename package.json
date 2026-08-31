@@ -34,7 +34,7 @@
     "globals": "^17.8.0",
     "gray-matter": "^4.0.3",
     "katex": "^0.18.1",
-    "markdown-it": "^14.3.0",
+    "markdown-it": "^15.0.1",
     "pagefind": "^1.5.2",
     "prettier": "^3.9.6",
     "prettier-plugin-tailwindcss": "^0.8.1",
