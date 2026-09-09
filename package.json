@@ -30,7 +30,7 @@
     "@types/markdown-it": "^14.1.2",
     "@vitejs/plugin-vue": "^6.0.8",
     "eslint": "^10.8.0",
-    "eslint-plugin-vue": "^10.10.0",
+    "eslint-plugin-vue": "^10.11.0",
     "globals": "^17.8.0",
     "gray-matter": "^4.0.3",
     "katex": "^0.18.1",
