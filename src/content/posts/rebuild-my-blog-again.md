@@ -1,7 +1,6 @@
 ---
 title: 重建我的博客
 pubDatetime: 2024-09-27T13:08:00+08:00
-description: 回顾几次重建博客的经历，以及这次重新开始写作的原因。
 tags: 
     - misc
 ---

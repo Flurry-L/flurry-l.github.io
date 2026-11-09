@@ -1,7 +1,6 @@
 ---
 title: 黄山游记
 pubDatetime: 2024-11-19T22:25:00+08:00
-description: 记录本研一新生应大四中学同学邀请，在黄山旅游的故事。
 tags: 
     - travel
 ---
