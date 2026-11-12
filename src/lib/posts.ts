@@ -1,11 +1,9 @@
-import { posts as rawPosts } from "virtual:posts-meta";
+import { posts } from "virtual:posts-meta";
+import { postLoaders } from "virtual:post-loaders";
 
-import { POSTS } from "../config";
 import {
   collectTags,
   filterByTag,
-  filterPublished,
-  sortPosts,
   type PostMeta,
   type TagCount,
 } from "./post-utils";
@@ -15,44 +13,33 @@ import type { Post } from "../types/post";
 export type { Post, PostMeta, TocItem } from "../types/post";
 export type { TagCount } from "./post-utils";
 
-export function getSortedPosts(now: number = Date.now()): PostMeta[] {
-  return sortPosts(filterPublished(rawPosts, now, POSTS.scheduledPostMargin));
-}
+export { posts };
 
 /**
- * Lists consume metadata only; this is the sole entry point for lazy bodies.
- * Returns undefined for missing/scheduled posts; chunk/network failures reject.
- * The router awaits this before SSR/hydration and commits only the current navigation.
+ * The build owns publication and ordering. Only published lazy loaders exist.
+ * The router awaits the selected body before SSR and hydration.
  */
-export async function getPostBySlug(
-  slug: string,
-  now?: number
-): Promise<Post | undefined> {
-  if (!getSortedPosts(now).some(post => post.slug === slug)) return undefined;
-  const { postLoaders } = await import("virtual:post-loaders");
+export async function getPostBySlug(slug: string): Promise<Post | undefined> {
   const load = Object.hasOwn(postLoaders, slug) ? postLoaders[slug] : undefined;
   return load ? (await load()).default : undefined;
 }
 
-export function getUniqueTags(
-  posts: PostMeta[] = getSortedPosts()
-): TagCount[] {
-  return collectTags(posts);
+export function getUniqueTags(items: PostMeta[] = posts): TagCount[] {
+  return collectTags(items);
 }
 
-export function getPostsByTag(tag: string, now?: number): PostMeta[] {
-  return filterByTag(getSortedPosts(now), tag);
+export function getPostsByTag(tag: string): PostMeta[] {
+  return filterByTag(posts, tag);
 }
 
 /** Adjacent posts for prev/next navigation, based on the sorted list. */
-export function getAdjacentPosts(
-  slug: string,
-  now?: number
-): { newer: PostMeta | undefined; older: PostMeta | undefined } {
-  const sorted = getSortedPosts(now);
-  const index = sorted.findIndex(post => post.slug === slug);
+export function getAdjacentPosts(slug: string): {
+  newer: PostMeta | undefined;
+  older: PostMeta | undefined;
+} {
+  const index = posts.findIndex(post => post.slug === slug);
   return {
-    newer: index > 0 ? sorted[index - 1] : undefined,
-    older: index >= 0 ? sorted[index + 1] : undefined,
+    newer: index > 0 ? posts[index - 1] : undefined,
+    older: index >= 0 ? posts[index + 1] : undefined,
   };
 }

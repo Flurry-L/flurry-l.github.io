@@ -1,36 +1,25 @@
-import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 
 import sharp from "sharp";
 import { afterEach, describe, expect, it } from "vitest";
 
-import { parseWeekendCalendar } from "../shared/weekend-calendar.mjs";
-import {
-  generatePostModule,
-  generatePostsMetaModule,
-} from "../vite/plugins/content";
-import { optimizeImage, publishImage } from "../vite/plugins/images.mjs";
+import { parseWeekendCalendar } from "../shared/weekend-calendar";
+import { buildContent, postMeta } from "../vite/plugins/content";
+import { prepareImage } from "../vite/plugins/images";
+import { buildFeeds } from "../vite/plugins/publish";
 import {
   extractToc,
   getMarkdown,
-  parsePost,
-  parsePostMeta,
+  readPostSource,
+  renderPost,
   readingStats,
-} from "../vite/plugins/markdown.mjs";
-import type { Post } from "../src/types/post";
+  type RenderOptions,
+} from "../vite/plugins/markdown";
 
 import { formatDate, getYear, groupPostsByYear } from "../src/lib/format";
-import {
-  collectTags,
-  filterByTag,
-  filterPublished,
-  isScheduled,
-  sortPosts,
-  type PostMeta,
-} from "../src/lib/post-utils";
+import { collectTags, filterByTag, type PostMeta } from "../src/lib/post-utils";
 
 function makePost(overrides: Partial<PostMeta> & { slug: string }): PostMeta {
   return {
@@ -46,43 +35,33 @@ function makePost(overrides: Partial<PostMeta> & { slug: string }): PostMeta {
 const NOW = new Date("2026-07-26T00:00:00.000Z").getTime();
 const MARGIN = 15 * 60 * 1000;
 
-describe("sortPosts", () => {
-  it("sorts by publication time, newest first, without mutating input", () => {
-    const posts = [
-      makePost({ slug: "old", pubDatetime: "2024-01-01T00:00:00.000Z" }),
-      makePost({ slug: "new", pubDatetime: "2026-01-01T00:00:00.000Z" }),
-      makePost({ slug: "mid", pubDatetime: "2025-01-01T00:00:00.000Z" }),
-    ];
-
-    const sorted = sortPosts(posts);
-
-    expect(sorted.map(post => post.slug)).toEqual(["new", "mid", "old"]);
-    expect(posts.map(post => post.slug)).toEqual(["old", "new", "mid"]);
-  });
-});
-
-describe("scheduled posts", () => {
-  it("keeps posts published within the margin window", () => {
-    const withinMargin = makePost({
-      slug: "soon",
-      pubDatetime: new Date(NOW + MARGIN).toISOString(),
-    });
-
-    expect(isScheduled(withinMargin, NOW, MARGIN)).toBe(false);
-    expect(filterPublished([withinMargin], NOW, MARGIN)).toHaveLength(1);
-  });
-
-  it("filters out posts published further than the margin in the future", () => {
-    const future = makePost({
-      slug: "future",
-      pubDatetime: new Date(NOW + MARGIN + 1).toISOString(),
-    });
-    const past = makePost({ slug: "past" });
-
-    expect(isScheduled(future, NOW, MARGIN)).toBe(true);
-    expect(
-      filterPublished([future, past], NOW, MARGIN).map(post => post.slug)
-    ).toEqual(["past"]);
+describe("build-time publication", () => {
+  it("freezes sorted published content at the margin boundary and never renders future assets", async () => {
+    const { root } = contentFixture(
+      {
+        old: "Old article",
+        newer: "Newer article",
+        boundary: "At the publication margin",
+        future: "UNPUBLISHED_SECRET ![private](./does-not-exist.jpg)",
+      },
+      {
+        old: "2024-01-01T00:00:00Z",
+        newer: "2025-01-01T00:00:00Z",
+        boundary: new Date(NOW + MARGIN).toISOString(),
+        future: new Date(NOW + MARGIN + 1).toISOString(),
+      }
+    );
+    const content = await buildContent(root, "/", NOW, MARGIN);
+    expect(content.posts.map(({ post }) => post.slug)).toEqual([
+      "boundary",
+      "newer",
+      "old",
+    ]);
+    expect(JSON.stringify(content)).not.toContain("UNPUBLISHED_SECRET");
+    const { rss, sitemap } = buildFeeds(content);
+    expect(rss).not.toContain("future");
+    expect(sitemap).not.toContain("future");
+    expect(content.assets.size).toBe(0);
   });
 });
 
@@ -142,59 +121,47 @@ afterEach(() => {
     fs.rmSync(root, { recursive: true, force: true });
 });
 
-function contentFixture(posts: Record<string, string>) {
+function contentFixture(
+  posts: Record<string, string>,
+  dates: Record<string, string> = {}
+) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "flurry-content-"));
   fixtureRoots.push(root);
   const postsDir = path.join(root, "src/content/posts");
   fs.mkdirSync(postsDir, { recursive: true });
+  fs.mkdirSync(path.join(root, "src/content/pages"), { recursive: true });
   for (const [slug, body] of Object.entries(posts)) {
     fs.writeFileSync(
       path.join(postsDir, `${slug}.md`),
-      `---\ntitle: ${slug}\npubDatetime: 2025-01-01\ntags: [test]\n---\n${body}`
+      `---\ntitle: ${slug}\npubDatetime: ${dates[slug] ?? "2025-01-01"}\ntags: [test]\n---\n${body}`
     );
   }
   return { root, postsDir };
 }
 
-function evaluatePostModule(source: string): Post {
-  return new Function(source.replace("export default", "return"))();
+async function parsePost(filePath: string, options?: RenderOptions) {
+  return (await renderPost(await readPostSource(filePath), options)).post;
 }
 
-describe("lazy content modules", () => {
-  it("exports only list metadata without resolving article images", async () => {
+async function parsePostMeta(filePath: string) {
+  return (await readPostSource(filePath)).meta;
+}
+
+describe("content metadata", () => {
+  it("keeps article bodies and headings out of the list payload", async () => {
     const { root } = contentFixture({
-      first:
-        "Visible excerpt\n<!-- excerpt -->\n## Private heading\nBody only\n![Photo](./missing.jpg)",
+      first: "Visible excerpt\n<!-- excerpt -->\n## Private heading\nBody only",
       second: "No explicit excerpt",
     });
-    const module = await generatePostsMetaModule(root);
-    const posts: PostMeta[] = new Function(
-      module.replace("export const posts =", "return")
-    )();
+    const content = await buildContent(root);
+    const posts = content.posts.map(({ post }) => postMeta(post));
     expect(posts.map(post => Object.keys(post).sort())).toEqual([
       ["description", "excerpt", "pubDatetime", "slug", "tags", "title"],
       ["description", "excerpt", "pubDatetime", "slug", "tags", "title"],
     ]);
     expect(posts[0].excerpt).toBe("Visible excerpt");
     expect(posts[1].excerpt).toBe("");
-    expect(JSON.stringify(posts)).not.toMatch(
-      /Private heading|Body only|missing\.jpg/
-    );
-  });
-
-  it("renders one article independently of another article's missing assets", async () => {
-    const { root } = contentFixture({
-      first: "## First\nHello 世界",
-      second: "![Photo](./missing.jpg)",
-    });
-    const post = evaluatePostModule(await generatePostModule(root, "first"));
-    expect(post.slug).toBe("first");
-    expect(post.toc).toEqual([{ depth: 2, id: "first", text: "First" }]);
-    expect(post.html).toContain("Hello 世界");
-    expect(post.wordCount).toBe(4);
-    await expect(generatePostModule(root, "../first")).rejects.toThrow(
-      "Unknown post"
-    );
+    expect(JSON.stringify(posts)).not.toMatch(/Private heading|Body only/);
   });
 });
 
@@ -328,17 +295,11 @@ describe("markdown reading metadata", () => {
 });
 
 describe("RSS markdown rendering", () => {
-  it("publishes highlighted code without interactive copy controls", () => {
+  it("publishes highlighted code without interactive copy controls", async () => {
     const { root } = contentFixture({
       first: "```js\nconst rssValue = 1;\n```\n\n```\nplain RSS code\n```",
     });
-    fs.mkdirSync(path.join(root, "dist"));
-    execFileSync(
-      process.execPath,
-      [fileURLToPath(new URL("../scripts/generate-rss.mjs", import.meta.url))],
-      { cwd: root, stdio: "pipe" }
-    );
-    const rss = fs.readFileSync(path.join(root, "dist/rss.xml"), "utf8");
+    const { rss } = buildFeeds(await buildContent(root));
     const body = rss.match(
       /<content:encoded><!\[CDATA\[([\s\S]*?)\]\]><\/content:encoded>/
     )?.[1];
@@ -350,6 +311,29 @@ describe("RSS markdown rendering", () => {
       /<button\b|code-copy-button|copy-icon|copied-icon|role="status"/
     );
   }, 30_000);
+
+  it("includes the complete calendar as escaped, chronological static events", async () => {
+    const { postsDir } = contentFixture({ first: "Calendar article" });
+    const source = await readPostSource(path.join(postsDir, "first.md"));
+    source.data.weekendCalendar = {
+      summary: "Weekend <notes>",
+      events: [
+        { date: "2026-04-05", text: "Later & second" },
+        { date: "2026-03-07", text: "Earlier <first>" },
+      ],
+    };
+    const { rss } = buildFeeds({
+      posts: [await renderPost(source)],
+      pages: {},
+    });
+    expect(rss).toContain("Weekend &lt;notes&gt;");
+    expect(rss).toContain("共 2 项");
+    expect(rss).toContain("Later &amp; second");
+    expect(rss.indexOf("Earlier &lt;first&gt;")).toBeLessThan(
+      rss.indexOf("Later &amp; second")
+    );
+    expect(rss).toContain('<time datetime="2026-03-07">2026-03-07</time>');
+  });
 });
 
 describe("shared calendar validation", () => {
@@ -406,68 +390,51 @@ describe("build-only image optimization", () => {
       .jpeg({ quality: 100 })
       .toBuffer();
     fs.writeFileSync(source, original);
-    const image = await optimizeImage(source);
+    const image = await prepareImage(source);
     expect(image.width).toBe(960);
     expect(image.height).toBe(1920);
     expect(image.data.length).toBeLessThan(original.length / 2);
     expect((await sharp(image.data).metadata()).format).toBe("webp");
-    const emitted: string[] = [];
-    const post = evaluatePostModule(
-      await generatePostModule(root, "first", asset => {
-        emitted.push(asset.fileName);
-        return JSON.stringify(`/${asset.fileName}`);
-      })
-    );
-    expect(emitted).toEqual([image.fileName]);
+    const content = await buildContent(root);
+    const { post, rssHtml } = content.posts[0];
+    expect([...content.assets.keys()]).toEqual([image.fileName]);
+    expect(content.assets.get(image.fileName)?.data).toEqual(image.data);
     expect(post.html).toContain(`src="/${image.fileName}"`);
-    const published = await publishImage(
-      "./photo.JPG",
-      path.join(postsDir, "first.md"),
-      root,
-      path.join(root, "dist"),
-      "https://example.com/"
-    );
-    expect(published).toEqual({
-      src: `https://example.com/${image.fileName}`,
-      width: 960,
-      height: 1920,
-    });
-    expect(fs.readFileSync(path.join(root, "dist", image.fileName))).toEqual(
-      image.data
+    expect(rssHtml).toContain(
+      `src="https://blog.flurry.top/${image.fileName}"`
     );
     expect(fs.readFileSync(source)).toEqual(original);
   });
 
-  it("leaves remote images alone and preserves SVG bytes", async () => {
+  it("preserves SVG/GIF bytes, MIME types and placeholder-like article text", async () => {
     const { root, postsDir } = contentFixture({
-      first: "![Vector](./diagram.svg)",
+      first:
+        "`__POST_IMAGE_0__`\n\n![Vector](./diagram.svg#detail)\n\n![motion](./motion.gif)\n\n![remote](https://example.org/photo.jpg)",
     });
-    const file = path.join(postsDir, "first.md");
     const svg =
-      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><path d="M0 0L10 10"/></svg>';
-    fs.writeFileSync(path.join(postsDir, "diagram.svg"), svg);
-    expect(
-      await publishImage(
-        "https://example.org/photo.jpg",
-        file,
-        root,
-        path.join(root, "dist"),
-        "https://example.com/"
-      )
-    ).toBe("https://example.org/photo.jpg");
-    const url = await publishImage(
-      "./diagram.svg",
-      file,
-      root,
-      path.join(root, "dist"),
-      "https://example.com/"
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><path id="detail" d="M0 0L10 10"/></svg>';
+    const gif = Buffer.from(
+      "R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7",
+      "base64"
     );
-    expect(typeof url).toBe("string");
-    expect(
-      fs.readFileSync(
-        path.join(root, "dist", new URL(url as string).pathname),
-        "utf8"
-      )
-    ).toBe(svg);
+    fs.writeFileSync(path.join(postsDir, "diagram.svg"), svg);
+    fs.writeFileSync(path.join(postsDir, "motion.gif"), gif);
+    const content = await buildContent(root);
+    const vector = [...content.assets.values()].find(
+      asset => asset.mime === "image/svg+xml"
+    )!;
+    const animation = [...content.assets.values()].find(
+      asset => asset.mime === "image/gif"
+    )!;
+    expect(vector.data.toString()).toBe(svg);
+    expect(animation.data).toEqual(gif);
+    const { post, rssHtml } = content.posts[0];
+    expect(post.html).toContain("__POST_IMAGE_0__");
+    expect(post.html).toContain(`src="/${vector.fileName}#detail"`);
+    expect(rssHtml).toContain(
+      `src="https://blog.flurry.top/${vector.fileName}#detail"`
+    );
+    expect(post.html).toContain('src="https://example.org/photo.jpg"');
+    expect(content.assets.size).toBe(2);
   });
 });

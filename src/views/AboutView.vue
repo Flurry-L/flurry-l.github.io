@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { useHead } from "@unhead/vue";
 import { pages } from "virtual:pages";
 
-import { SITE, SOCIALS } from "../config";
+import { SOCIALS } from "../config";
 
 const about = pages.about;
 
@@ -13,15 +12,6 @@ const contacts = [
   })),
   { label: "RSS", url: "/rss.xml" },
 ];
-
-useHead({
-  title: `${about.title} | ${SITE.title}`,
-  meta: [
-    { name: "description", content: about.description },
-    { property: "og:title", content: about.title },
-    { property: "og:description", content: about.description },
-  ],
-});
 </script>
 
 <template>

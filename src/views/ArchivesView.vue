@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import FormattedDate from "../components/FormattedDate.vue";
 import { groupPostsByYear } from "../lib/format";
-import { getSortedPosts } from "../lib/posts";
+import { posts } from "../lib/posts";
 
-const groups = groupPostsByYear(getSortedPosts());
+const groups = groupPostsByYear(posts);
 </script>
 
 <template>

@@ -23,3 +23,7 @@ declare module "virtual:pages" {
 
   export const pages: Record<string, Page>;
 }
+
+declare module "virtual:pages-meta" {
+  export const pages: Record<string, { title: string; description: string }>;
+}

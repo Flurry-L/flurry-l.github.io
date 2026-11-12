@@ -219,13 +219,17 @@ body {
   visibility: hidden;
 }
 
-.code-copy-button .copied-icon,
-.code-copy-button[data-state="copied"] .copy-icon {
-  display: none;
+.code-copy-button::after {
+  content: "";
+  width: 1rem;
+  height: 1rem;
+  background: currentColor;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.5'%3E%3Crect x='8' y='8' width='12' height='12' rx='2'/%3E%3Cpath d='M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3'/%3E%3C/svg%3E")
+    center / contain no-repeat;
 }
 
-.code-copy-button[data-state="copied"] .copied-icon {
-  display: block;
+.code-copy-button[data-state="copied"]::after {
+  mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2'%3E%3Cpath d='m5 12 4 4L19 6'/%3E%3C/svg%3E");
 }
 
 .code-copy-button[data-state]::before {

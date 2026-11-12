@@ -7,12 +7,11 @@ import {
   ref,
   useId,
   watch,
-  type ComponentPublicInstance,
   type PropType,
 } from "vue";
 
 import { buildWeekendCalendar } from "./model";
-import type { WeekendCalendarEvent } from "./schema";
+import type { WeekendCalendarEvent } from "../../../shared/weekend-calendar";
 
 const props = defineProps({
   summary: { type: String, required: true },
@@ -33,12 +32,6 @@ const expandedMonths = ref(new Set<string>());
 const overflowingMonths = ref(new Set<string>());
 const highlightedDate = ref<string>();
 const rootElement = ref<HTMLElement>();
-const tabElements = new Map<string, HTMLButtonElement>();
-const panelElements = new Map<string, HTMLElement>();
-const monthElements = new Map<string, HTMLElement>();
-const agendaElements = new Map<string, HTMLElement>();
-const agendaItemElements = new Map<string, HTMLElement>();
-const queuedFrames = new Set<number>();
 let resizeObserver: ResizeObserver | undefined;
 let highlightTimer: number | undefined;
 let mounted = false;
@@ -59,13 +52,8 @@ function agendaItemId(date: string) {
   return `${idPrefix.value}-agenda-item-${date}`;
 }
 
-function setElement<T extends HTMLElement>(
-  elements: Map<string, T>,
-  key: string,
-  element: Element | ComponentPublicInstance | null
-) {
-  if (element instanceof HTMLElement) elements.set(key, element as T);
-  else elements.delete(key);
+function getElement(id: string) {
+  return rootElement.value?.querySelector<HTMLElement>(`[id="${id}"]`);
 }
 
 function isExpanded(monthKey: string) {
@@ -76,56 +64,35 @@ function canToggleAgenda(monthKey: string) {
   return overflowingMonths.value.has(monthKey) || isExpanded(monthKey);
 }
 
-function replaceSetValue(source: Set<string>, value: string, present: boolean) {
-  const next = new Set(source);
-  if (present) next.add(value);
-  else next.delete(value);
-  return next;
+function refreshAgenda() {
+  if (!mounted || isExpanded(selectedMonthKey.value)) return;
+
+  const viewport = getElement(agendaId(selectedMonthKey.value));
+  if (!viewport) return;
+
+  if (viewport.scrollHeight > viewport.clientHeight + 1)
+    overflowingMonths.value.add(selectedMonthKey.value);
+  else overflowingMonths.value.delete(selectedMonthKey.value);
 }
 
-function refreshAgenda(monthKey: string) {
+function observeAgenda() {
   if (!mounted) return;
 
-  const panel = panelElements.get(monthKey);
-  const month = monthElements.get(monthKey);
-  const viewport = agendaElements.get(monthKey);
-  if (!panel || !month || !viewport) return;
-
-  const monthHeight = month.getBoundingClientRect().height;
-  if (monthHeight > 0)
-    panel.style.setProperty("--calendar-month-height", `${monthHeight}px`);
-  if (isExpanded(monthKey)) {
-    overflowingMonths.value = replaceSetValue(
-      overflowingMonths.value,
-      monthKey,
-      true
-    );
-    return;
+  resizeObserver?.disconnect();
+  if (rootElement.value) resizeObserver?.observe(rootElement.value);
+  const viewport = getElement(agendaId(selectedMonthKey.value));
+  if (viewport) {
+    resizeObserver?.observe(viewport);
+    if (viewport.firstElementChild)
+      resizeObserver?.observe(viewport.firstElementChild);
   }
-
-  const overflows = viewport.scrollHeight > viewport.clientHeight + 1;
-  overflowingMonths.value = replaceSetValue(
-    overflowingMonths.value,
-    monthKey,
-    overflows
-  );
-}
-
-function queueAgendaRefresh(monthKey: string) {
-  if (!mounted) return;
-
-  const frame = window.requestAnimationFrame(() => {
-    queuedFrames.delete(frame);
-    refreshAgenda(monthKey);
-  });
-  queuedFrames.add(frame);
+  refreshAgenda();
 }
 
 async function selectMonth(monthKey: string, moveFocus = false) {
   selectedMonthKey.value = monthKey;
   await nextTick();
-  if (moveFocus) tabElements.get(monthKey)?.focus();
-  queueAgendaRefresh(monthKey);
+  if (moveFocus) getElement(tabId(monthKey))?.focus();
 }
 
 function handleTabKeydown(event: KeyboardEvent, index: number) {
@@ -145,16 +112,13 @@ function handleTabKeydown(event: KeyboardEvent, index: number) {
 
 async function toggleAgenda(monthKey: string) {
   const expanded = !isExpanded(monthKey);
-  expandedMonths.value = replaceSetValue(
-    expandedMonths.value,
-    monthKey,
-    expanded
-  );
+  if (expanded) expandedMonths.value.add(monthKey);
+  else expandedMonths.value.delete(monthKey);
   await nextTick();
 
-  const viewport = agendaElements.get(monthKey);
+  const viewport = getElement(agendaId(monthKey));
   if (!expanded && viewport) viewport.scrollTop = 0;
-  queueAgendaRefresh(monthKey);
+  refreshAgenda();
 }
 
 function preferredScrollBehavior(): ScrollBehavior {
@@ -164,12 +128,12 @@ function preferredScrollBehavior(): ScrollBehavior {
 }
 
 function jumpToDate(monthKey: string, date: string) {
-  const viewport = agendaElements.get(monthKey);
-  const target = agendaItemElements.get(date);
+  const viewport = getElement(agendaId(monthKey));
+  const target = getElement(agendaItemId(date));
   if (!viewport || !target) return;
 
   const behavior = preferredScrollBehavior();
-  if (!isExpanded(monthKey)) {
+  if (!isExpanded(monthKey) && overflowingMonths.value.has(monthKey)) {
     const viewportRect = viewport.getBoundingClientRect();
     const targetRect = target.getBoundingClientRect();
     const top =
@@ -190,42 +154,23 @@ function jumpToDate(monthKey: string, date: string) {
   }, 1600);
 }
 
-watch(
-  () => model.value.months.map(month => month.key).join(","),
-  () => {
-    if (
-      !model.value.months.some(month => month.key === selectedMonthKey.value)
-    ) {
-      selectedMonthKey.value = model.value.months[0]?.key ?? "";
-    }
-    if (mounted && selectedMonthKey.value) {
-      void nextTick(() => queueAgendaRefresh(selectedMonthKey.value));
-    }
+watch(model, () => {
+  if (!model.value.months.some(month => month.key === selectedMonthKey.value)) {
+    selectedMonthKey.value = model.value.months[0]?.key ?? "";
   }
-);
+});
+
+watch([model, selectedMonthKey], observeAgenda, { flush: "post" });
 
 onMounted(() => {
   mounted = true;
-  if (selectedMonthKey.value) queueAgendaRefresh(selectedMonthKey.value);
-
-  void document.fonts?.ready.then(() => {
-    if (mounted && selectedMonthKey.value)
-      queueAgendaRefresh(selectedMonthKey.value);
-  });
-
-  if ("ResizeObserver" in window && rootElement.value) {
-    resizeObserver = new ResizeObserver(() => {
-      if (selectedMonthKey.value) queueAgendaRefresh(selectedMonthKey.value);
-    });
-    resizeObserver.observe(rootElement.value);
-  }
+  resizeObserver = new ResizeObserver(refreshAgenda);
+  observeAgenda();
 });
 
 onBeforeUnmount(() => {
   mounted = false;
   resizeObserver?.disconnect();
-  for (const frame of queuedFrames) window.cancelAnimationFrame(frame);
-  queuedFrames.clear();
   if (highlightTimer !== undefined) window.clearTimeout(highlightTimer);
 });
 </script>
@@ -254,7 +199,6 @@ onBeforeUnmount(() => {
           v-for="(month, index) in model.months"
           :id="tabId(month.key)"
           :key="month.key"
-          :ref="element => setElement(tabElements, month.key, element)"
           type="button"
           role="tab"
           :aria-label="month.label"
@@ -273,16 +217,12 @@ onBeforeUnmount(() => {
           v-for="month in model.months"
           :id="panelId(month.key)"
           :key="month.key"
-          :ref="element => setElement(panelElements, month.key, element)"
           class="calendar-panel"
           role="tabpanel"
           :aria-labelledby="tabId(month.key)"
           :hidden="selectedMonthKey !== month.key"
         >
-          <div
-            :ref="element => setElement(monthElements, month.key, element)"
-            class="calendar-month"
-          >
+          <div class="calendar-month">
             <header>
               <strong>{{ month.label }}</strong>
               <span>{{ month.eventCount }} 个日程</span>
@@ -342,7 +282,6 @@ onBeforeUnmount(() => {
             </header>
             <div
               :id="agendaId(month.key)"
-              :ref="element => setElement(agendaElements, month.key, element)"
               class="calendar-agenda-scroll"
               role="region"
               :aria-label="`${month.label}日程列表`"
@@ -358,9 +297,6 @@ onBeforeUnmount(() => {
                   v-for="day in month.agenda"
                   :id="agendaItemId(day.date)"
                   :key="day.date"
-                  :ref="
-                    element => setElement(agendaItemElements, day.date, element)
-                  "
                   :class="{ 'is-highlighted': highlightedDate === day.date }"
                   tabindex="-1"
                 >

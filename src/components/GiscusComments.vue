@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from "vue";
 
-import { GISCUS, GISCUS_ENABLED } from "../config";
+import { GISCUS } from "../config";
 import { useTheme } from "../composables/useTheme";
 
 const props = defineProps<{ term: string }>();
-const enabled = GISCUS_ENABLED;
 const container = ref<HTMLElement>();
 const { isDark } = useTheme();
 
@@ -14,7 +13,7 @@ function giscusTheme(): string {
 }
 
 onMounted(() => {
-  if (!enabled || !container.value) return;
+  if (!container.value) return;
 
   const script = document.createElement("script");
   script.src = "https://giscus.app/client.js";
@@ -50,7 +49,7 @@ watch(isDark, () => {
 </script>
 
 <template>
-  <section v-if="enabled" class="mt-12" aria-label="评论区">
+  <section class="mt-12" aria-label="评论区">
     <h2 class="mb-4 text-lg font-semibold">评论</h2>
     <div ref="container" />
   </section>

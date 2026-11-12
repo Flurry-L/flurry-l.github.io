@@ -1,4 +1,4 @@
-import type { WeekendCalendarInput } from "../features/weekend-calendar/schema";
+import type { WeekendCalendarInput } from "../../shared/weekend-calendar";
 
 export interface TocItem {
   depth: number;

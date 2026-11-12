@@ -7,6 +7,7 @@ import { defineConfig } from "vite";
 import type {} from "vite-ssg";
 
 import { contentPlugin } from "./vite/plugins/content";
+import { finishContentBuild } from "./vite/plugins/publish";
 
 export default defineConfig({
   envPrefix: ["VITE_", "PUBLIC_"],
@@ -30,6 +31,8 @@ export default defineConfig({
   ssgOptions: {
     dirStyle: "nested",
     script: "defer",
+    onFinished: () =>
+      finishContentBuild(fileURLToPath(new URL("./dist", import.meta.url))),
   },
   resolve: {
     alias: {

@@ -1,5 +1,6 @@
 import { nextTick } from "vue";
 import type { RouterOptions, RouteRecordRaw } from "vue-router";
+import { pages } from "virtual:pages-meta";
 import type { Post } from "../types/post";
 
 declare module "vue-router" {
@@ -44,6 +45,7 @@ export const routes: RouteRecordRaw[] = [
     path: "/about",
     name: "about",
     component: () => import("../views/AboutView.vue"),
+    meta: { title: pages.about.title, description: pages.about.description },
   },
   {
     path: "/links",

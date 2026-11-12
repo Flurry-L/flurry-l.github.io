@@ -1,6 +1,4 @@
-// Shared markdown rendering pipeline for the blog.
-// Used by the Vite content plugin (vite/plugins/content.ts) and by
-// scripts/generate-rss.mjs, so both render posts exactly the same way.
+// Shared Markdown parsing for article chunks, static pages and RSS.
 import fs from "node:fs";
 import path from "node:path";
 
@@ -10,12 +8,48 @@ import matter from "gray-matter";
 import MarkdownIt from "markdown-it";
 import anchor from "markdown-it-anchor";
 
-import { parseWeekendCalendar } from "../../shared/weekend-calendar.mjs";
+import type Token from "markdown-it/lib/token.mjs";
+import type { Post, PostMeta, TocItem } from "../../src/types/post";
+import { parseWeekendCalendar } from "../../shared/weekend-calendar";
 
-let markdownPromise;
+export interface ResolvedImage {
+  src: string;
+  width?: number;
+  height?: number;
+}
+export interface RenderOptions {
+  resolveImage?: (
+    src: string
+  ) => string | ResolvedImage | Promise<string | ResolvedImage>;
+  rssUrl?: string;
+}
+export interface ParsedPage {
+  title: string;
+  description: string;
+  html: string;
+}
+export interface PostSource {
+  md: MarkdownIt;
+  data: Record<string, unknown>;
+  content: string;
+  marker: string;
+  meta: PostMeta;
+}
+export interface RenderedPost {
+  post: Post;
+  rssHtml: string;
+}
+interface RenderEnvironment {
+  images?: Map<string, string | ResolvedImage>;
+  codeControls?: boolean;
+  fenceHtml?: Map<Token, string>;
+  absoluteUrl?: string;
+}
+
+let markdownPromise: Promise<MarkdownIt> | undefined;
 
 const codeControls =
-  '<button type="button" class="code-copy-button" aria-label="复制代码" title="复制代码" data-pagefind-ignore="all"><svg class="copy-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg><svg class="copied-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg></button><span class="sr-only" role="status" data-pagefind-ignore="all"></span>';
+  '<button type="button" class="code-copy-button" aria-label="复制代码" title="复制代码" data-pagefind-ignore="all"></button><span class="sr-only" role="status" data-pagefind-ignore="all"></span>';
 
 export function getMarkdown() {
   markdownPromise ??= createMarkdown();
@@ -39,31 +73,65 @@ async function createMarkdown() {
     md.renderer.rules.image ??
     ((tokens, idx, options, env, self) =>
       self.renderToken(tokens, idx, options));
-  md.renderer.rules.image = (tokens, idx, options, env, self) => {
+  md.renderer.rules.image = (
+    tokens,
+    idx,
+    options,
+    env: RenderEnvironment,
+    self
+  ) => {
     const token = tokens[idx];
     token.attrSet("loading", "lazy");
     token.attrSet("decoding", "async");
     const src = token.attrGet("src");
-    if (src && env?.images?.has(src)) {
-      const image = env.images.get(src);
+    const image = src ? env?.images?.get(src) : undefined;
+    if (image) {
       token.attrSet("src", typeof image === "string" ? image : image.src);
       if (typeof image !== "string") {
         if (image.width) token.attrSet("width", String(image.width));
         if (image.height) token.attrSet("height", String(image.height));
       }
     }
+    if (env.absoluteUrl)
+      token.attrSet(
+        "src",
+        new URL(token.attrGet("src")!, env.absoluteUrl).href
+      );
     return defaultImage(tokens, idx, options, env, self);
   };
 
-  const defaultFence = md.renderer.rules.fence;
-  md.renderer.rules.fence = (tokens, idx, options, env, self) => {
+  md.renderer.rules.link_open = (
+    tokens,
+    idx,
+    options,
+    env: RenderEnvironment,
+    self
+  ) => {
+    const href = tokens[idx].attrGet("href");
+    if (href && env.absoluteUrl)
+      tokens[idx].attrSet("href", new URL(href, env.absoluteUrl).href);
+    return self.renderToken(tokens, idx, options);
+  };
+
+  const defaultFence = md.renderer.rules.fence!;
+  md.renderer.rules.fence = (
+    tokens,
+    idx,
+    options,
+    env: RenderEnvironment,
+    self
+  ) => {
     const language = md.utils.escapeHtml(
       tokens[idx].info.trim().split(/\s+/)[0] || "text"
     );
-    const pre = defaultFence(tokens, idx, options, env, self).replace(
-      /<pre(?=[\s>])/,
-      `<pre data-language="${language}"`
-    );
+    let pre = env.fenceHtml?.get(tokens[idx]);
+    if (!pre) {
+      pre = defaultFence(tokens, idx, options, env, self).replace(
+        /<pre(?=[\s>])/,
+        `<pre data-language="${language}"`
+      );
+      env.fenceHtml?.set(tokens[idx], pre);
+    }
     return `<div class="code-block" data-language="${language}">${pre}${env?.codeControls === false ? "" : codeControls}</div>\n`;
   };
 
@@ -71,7 +139,7 @@ async function createMarkdown() {
 }
 
 // github-slugger-like slugify that keeps CJK characters.
-export function slugify(text) {
+export function slugify(text: string) {
   return text
     .trim()
     .toLowerCase()
@@ -83,8 +151,8 @@ export function slugify(text) {
 
 // Keep prose token boundaries for reading counts, but join visible inline text
 // naturally for headings and excerpts. Only excerpts include image alt/math.
-function inlineText(tokens, separator = "", excerpt = false) {
-  const parts = [];
+function inlineText(tokens: Token[], separator = "", excerpt = false) {
+  const parts: string[] = [];
   for (const token of tokens) {
     if (
       token.type === "text" ||
@@ -102,8 +170,8 @@ function inlineText(tokens, separator = "", excerpt = false) {
 }
 
 /** Read the final heading IDs from Markdown tokens, not rendered HTML. */
-export function extractToc(tokens) {
-  const toc = [];
+export function extractToc(tokens: Token[]): TocItem[] {
+  const toc: TocItem[] = [];
   for (let index = 0; index < tokens.length; index += 1) {
     const token = tokens[index];
     if (token.type !== "heading_open" || !["h2", "h3"].includes(token.tag))
@@ -112,40 +180,43 @@ export function extractToc(tokens) {
     const text = inlineText(inline?.children ?? []).trim();
     toc.push({
       depth: Number(token.tag.slice(1)),
-      id: token.attrGet("id"),
+      id: token.attrGet("id")!,
       text,
     });
   }
   return toc;
 }
 
-function toIsoDatetime(value, slug) {
-  const date = value instanceof Date ? value : new Date(value);
+function toIsoDatetime(value: unknown, slug: string) {
+  const date =
+    value instanceof Date
+      ? value
+      : new Date(typeof value === "number" ? value : String(value));
   if (Number.isNaN(date.getTime())) {
     throw new Error(`Invalid pubDatetime in post "${slug}": ${value}`);
   }
   return date.toISOString();
 }
 
-function normalizeTags(tags) {
+function normalizeTags(tags: unknown) {
   if (tags == null) return [];
   const list = Array.isArray(tags) ? tags : [tags];
   return list.map(tag => String(tag).trim()).filter(Boolean);
 }
 
-function validateWeekendCalendar(input, slug) {
+function validateWeekendCalendar(input: unknown, slug: string) {
   try {
     return parseWeekendCalendar(input);
   } catch (error) {
     throw new TypeError(
-      `Invalid weekendCalendar in post "${slug}": ${error.message}`,
+      `Invalid weekendCalendar in post "${slug}": ${error instanceof Error ? error.message : String(error)}`,
       { cause: error }
     );
   }
 }
 
 // Count CJK characters individually and Latin words as units, excluding markup.
-export function readingStats(tokens) {
+export function readingStats(tokens: Token[]) {
   const text = tokens
     .map(token =>
       token.type === "inline" ? inlineText(token.children ?? [], " ") : ""
@@ -171,7 +242,7 @@ export function readingStats(tokens) {
   };
 }
 
-async function readPostSource(filePath) {
+export async function readPostSource(filePath: string): Promise<PostSource> {
   const md = await getMarkdown();
   const raw = fs.readFileSync(filePath, "utf8");
   const { data, content } = matter(raw);
@@ -210,33 +281,29 @@ async function readPostSource(filePath) {
   };
 }
 
-export async function parsePostMeta(filePath) {
-  return (await readPostSource(filePath)).meta;
-}
-
-export async function parsePost(
-  filePath,
-  { resolveImage, codeControls = true } = {}
-) {
-  const { md, data, content, marker, meta } = await readPostSource(filePath);
+export async function renderPost(
+  source: PostSource,
+  { resolveImage, rssUrl }: RenderOptions = {}
+): Promise<RenderedPost> {
+  const { md, data, content, marker, meta } = source;
   const body = content.replace(marker, "");
-  const env = { images: new Map(), codeControls };
+  const env: RenderEnvironment = { images: new Map(), fenceHtml: new Map() };
   const tokens = md.parse(body, env);
   if (resolveImage) {
-    const sources = new Set();
-    const collectImages = tokens => {
+    const sources = new Set<string>();
+    const collectImages = (tokens: Token[]) => {
       for (const token of tokens) {
-        if (token.type === "image") sources.add(token.attrGet("src"));
+        if (token.type === "image") sources.add(token.attrGet("src")!);
         if (token.children) collectImages(token.children);
       }
     };
     collectImages(tokens);
     for (const src of sources) {
-      if (src) env.images.set(src, await resolveImage(src));
+      if (src) env.images!.set(src, await resolveImage(src));
     }
   }
   const html = md.renderer.render(tokens, md.options, env);
-  return {
+  const post: Post = {
     ...meta,
     html,
     ...readingStats(tokens),
@@ -246,9 +313,15 @@ export async function parsePost(
         ? validateWeekendCalendar(data.weekendCalendar, meta.slug)
         : null,
   };
+  const rssHtml = md.renderer.render(tokens, md.options, {
+    ...env,
+    codeControls: false,
+    absoluteUrl: rssUrl,
+  });
+  return { post, rssHtml };
 }
 
-export async function parsePage(filePath) {
+export async function parsePage(filePath: string): Promise<ParsedPage> {
   const md = await getMarkdown();
   const { data, content } = matter(fs.readFileSync(filePath, "utf8"));
   return {

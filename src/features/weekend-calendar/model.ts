@@ -1,5 +1,8 @@
-import type { WeekendCalendarEvent } from "./schema";
-import { parseCalendarDate, toUtcDate } from "./date";
+import {
+  parseCalendarDate,
+  toUtcDate,
+  type WeekendCalendarEvent,
+} from "../../../shared/weekend-calendar";
 
 const WEEKDAY_NAMES = [
   "周日",

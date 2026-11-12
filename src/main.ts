@@ -3,7 +3,7 @@ import "katex/dist/katex.min.css";
 
 import App from "./App.vue";
 import { routes, scrollBehavior } from "./router";
-import { getPostBySlug, getSortedPosts, getUniqueTags } from "./lib/posts";
+import { getPostBySlug, posts, getUniqueTags } from "./lib/posts";
 import "./styles/main.css";
 
 // Static hosts may serve 404.html for an unknown URL. Hydrate only matching
@@ -38,7 +38,6 @@ export const createApp = ViteSSG(
 );
 
 export function includedRoutes() {
-  const posts = getSortedPosts();
   return [
     ...routes
       .filter(route => !route.path.includes(":"))

@@ -9,6 +9,7 @@ declare global {
       element: string;
       showSubResults?: boolean;
       showImages?: boolean;
+      autofocus?: boolean;
     }) => PagefindInstance;
   }
 }
@@ -49,12 +50,12 @@ function loadPagefind(): Promise<void> {
 </script>
 
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
-import { useRoute, useRouter } from "vue-router";
+import { onBeforeUnmount, onMounted, ref } from "vue";
+import { useRouter } from "vue-router";
 
 const emit = defineEmits<{ close: [] }>();
 const router = useRouter();
-const route = useRoute();
+const isDev = import.meta.env.DEV;
 const status = ref<"loading" | "ready" | "missing">("loading");
 const dialogRef = ref<HTMLDialogElement>();
 let mounted = false;
@@ -94,8 +95,6 @@ function onResultClick(event: MouseEvent) {
   close();
 }
 
-watch(() => route.fullPath, close);
-
 onMounted(async () => {
   mounted = true;
   previousOverflow = document.body.style.overflow;
@@ -115,11 +114,9 @@ onMounted(async () => {
       element: "#pagefind-search",
       showSubResults: true,
       showImages: false,
+      autofocus: true,
     });
     status.value = "ready";
-    await nextTick();
-    if (mounted && dialogRef.value?.open)
-      dialogRef.value.querySelector<HTMLInputElement>("input")?.focus();
   } catch {
     if (mounted) status.value = "missing";
   }
@@ -172,8 +169,8 @@ onBeforeUnmount(() => {
         @click="onResultClick"
       />
       <div v-if="status === 'missing'" class="text-muted-foreground text-sm">
-        <p>搜索索引还没有生成。</p>
-        <p class="mt-2">
+        <p>搜索暂时不可用，请稍后再试。</p>
+        <p v-if="isDev" class="mt-2">
           请先运行
           <code class="bg-muted rounded px-1.5 py-0.5">npm run build</code> 生成
           Pagefind 索引。

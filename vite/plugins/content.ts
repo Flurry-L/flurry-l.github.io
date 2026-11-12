@@ -1,187 +1,227 @@
-import fs from "node:fs";
+import fs from "node:fs/promises";
 import path from "node:path";
 
-import type { Plugin } from "vite";
+import type { Plugin, ViteDevServer } from "vite";
 
-import { parsePage, parsePost, parsePostMeta } from "./markdown.mjs";
+import siteConfig from "../../site.config.json";
+import type { PostMeta } from "../../src/types/post";
 import {
-  isRasterImage,
-  localImagePath,
-  optimizeImage,
-  type OptimizedImage,
-} from "./images.mjs";
+  parsePage,
+  readPostSource,
+  renderPost,
+  type ParsedPage,
+  type RenderedPost,
+} from "./markdown";
+import { localImagePath, prepareImage, type ImageAsset } from "./images";
 
 const META_ID = "virtual:posts-meta";
 const LOADERS_ID = "virtual:post-loaders";
 const POST_PREFIX = "virtual:post/";
 const PAGES_ID = "virtual:pages";
+const PAGE_META_ID = "virtual:pages-meta";
+export const SNAPSHOT_FILE = ".vite/content-snapshot.json";
 
-function postFiles(root: string) {
-  return fs
-    .readdirSync(path.join(root, "src/content/posts"))
-    .filter(file => file.endsWith(".md"))
-    .sort();
+export interface ContentSnapshot {
+  posts: RenderedPost[];
+  pages: Record<string, ParsedPage>;
+}
+export interface BuiltContent extends ContentSnapshot {
+  assets: Map<string, ImageAsset>;
 }
 
-/** Metadata is shared by lists; each article and its assets form a lazy chunk. */
-export function contentPlugin(): Plugin {
+export function postMeta({
+  slug,
+  title,
+  pubDatetime,
+  description,
+  tags,
+  excerpt,
+}: PostMeta): PostMeta {
+  return { slug, title, pubDatetime, description, tags, excerpt };
+}
+
+/**
+ * One publication cutoff and one parsed source per article for this build.
+ * Scheduled posts become public on the next build, never on the reader's clock.
+ */
+export async function buildContent(
+  root: string,
+  base = "/",
+  now = Date.now(),
+  margin = siteConfig.posts.scheduledPostMargin
+): Promise<BuiltContent> {
+  const postsDir = path.join(root, "src/content/posts");
+  const files = (await fs.readdir(postsDir))
+    .filter(file => file.endsWith(".md"))
+    .sort();
+  const sources = await Promise.all(
+    files.map(file => readPostSource(path.join(postsDir, file)))
+  );
+  const published = sources
+    .filter(
+      source => new Date(source.meta.pubDatetime).getTime() <= now + margin
+    )
+    .sort((a, b) => b.meta.pubDatetime.localeCompare(a.meta.pubDatetime));
+  const assets = new Map<string, ImageAsset>();
+  const posts: RenderedPost[] = [];
+  for (const source of published) {
+    const file = path.join(postsDir, `${source.meta.slug}.md`);
+    posts.push(
+      await renderPost(source, {
+        rssUrl: new URL(
+          `posts/${encodeURIComponent(source.meta.slug)}`,
+          siteConfig.site.url
+        ).href,
+        async resolveImage(src) {
+          const absolute = localImagePath(src, file, root);
+          if (!absolute) return src;
+          const image = await prepareImage(absolute);
+          assets.set(image.fileName, image);
+          const suffix = src.match(/[?#].*$/)?.[0] ?? "";
+          return {
+            src: `${base}${image.fileName}${suffix}`,
+            width: image.width,
+            height: image.height,
+          };
+        },
+      })
+    );
+  }
+  const pages: Record<string, ParsedPage> = {};
+  const pagesDir = path.join(root, "src/content/pages");
+  for (const file of (await fs.readdir(pagesDir))
+    .filter(file => file.endsWith(".md"))
+    .sort()) {
+    pages[path.basename(file, ".md")] = await parsePage(
+      path.join(pagesDir, file)
+    );
+  }
+  return { posts, pages, assets };
+}
+
+/** The client build writes its snapshot; SSR and publication hooks consume it. */
+export function contentPlugin(clientOutDir = "dist"): Plugin {
   let root = "";
   let base = "/";
   let isBuild = false;
-  let isSSRBuild = false;
-  const devImages = new Map<string, Buffer>();
+  let isSSR = false;
+  let snapshot: Promise<ContentSnapshot> | undefined;
+  const assets = new Map<string, ImageAsset>();
+
+  function getSnapshot(): Promise<ContentSnapshot> {
+    snapshot ??= isSSR
+      ? fs
+          .readFile(path.resolve(root, clientOutDir, SNAPSHOT_FILE), "utf8")
+          .then(text => JSON.parse(text) as ContentSnapshot)
+      : buildContent(root, base).then(({ posts, pages, assets: generated }) => {
+          for (const [name, image] of generated) assets.set(name, image);
+          return { posts, pages };
+        });
+    return snapshot;
+  }
+
+  function reload(file: string, server: ViteDevServer) {
+    if (
+      !["src/content", "shared", "public"].some(dir =>
+        file.startsWith(path.join(root, dir) + path.sep)
+      )
+    )
+      return false;
+    snapshot = undefined;
+    assets.clear();
+    for (const [id, module] of server.moduleGraph.idToModuleMap) {
+      if (id.startsWith("\0virtual:"))
+        server.moduleGraph.invalidateModule(module);
+    }
+    server.ws.send({ type: "full-reload" });
+    return true;
+  }
+
   return {
     name: "flurry-content",
     configResolved(config) {
       root = config.root;
       base = config.base;
       isBuild = config.command === "build";
-      isSSRBuild = Boolean(config.build.ssr);
+      isSSR = Boolean(config.build.ssr);
     },
     resolveId(id) {
       if (
-        [META_ID, LOADERS_ID, PAGES_ID].includes(id) ||
+        [META_ID, LOADERS_ID, PAGES_ID, PAGE_META_ID].includes(id) ||
         id.startsWith(POST_PREFIX)
       )
         return `\0${id}`;
-      return null;
     },
     async load(id) {
-      if (id === `\0${META_ID}`) return generatePostsMetaModule(root);
-      if (id === `\0${LOADERS_ID}`) return generatePostLoadersModule(root);
-      if (id === `\0${PAGES_ID}`) return generatePagesModule(root);
-      if (id.startsWith(`\0${POST_PREFIX}`)) {
-        return generatePostModule(
-          root,
-          id.slice(POST_PREFIX.length + 1),
-          (image, absolute) => {
-            this.addWatchFile(absolute);
-            if (isBuild && !isSSRBuild) {
-              this.emitFile({
-                type: "asset",
-                fileName: image.fileName,
-                source: image.data,
-              });
-            }
-            // Both builds must render the same deployed URL, not a URL relative
-            // to the SSR bundle's file:// location or the client's lazy chunk.
-            const url = `${base}${image.fileName}`;
-            if (!isBuild) devImages.set(url, image.data);
-            return JSON.stringify(url);
-          }
+      if (!id.startsWith("\0virtual:")) return;
+      const { posts, pages } = await getSnapshot();
+      if (id === `\0${META_ID}`)
+        return `export const posts = ${JSON.stringify(posts.map(({ post }) => postMeta(post)))};`;
+      if (id === `\0${LOADERS_ID}`) {
+        // A generated registry is required so Rollup discovers only published lazy chunks.
+        const entries = posts.map(
+          ({ post }) =>
+            `[${JSON.stringify(post.slug)}]: () => import(${JSON.stringify(POST_PREFIX + post.slug)})`
         );
+        return `export const postLoaders = {${entries.join(",\n")}};`;
       }
-      return null;
+      if (id === `\0${PAGES_ID}`)
+        return `export const pages = ${JSON.stringify(pages)};`;
+      if (id === `\0${PAGE_META_ID}`) {
+        const meta = Object.fromEntries(
+          Object.entries(pages).map(([slug, { title, description }]) => [
+            slug,
+            { title, description },
+          ])
+        );
+        return `export const pages = ${JSON.stringify(meta)};`;
+      }
+      if (id.startsWith(`\0${POST_PREFIX}`)) {
+        const slug = id.slice(POST_PREFIX.length + 1);
+        const entry = posts.find(({ post }) => post.slug === slug);
+        if (!entry) throw new Error(`Unknown or unpublished post: ${slug}`);
+        return `export default ${JSON.stringify(entry.post)};`;
+      }
+    },
+    async generateBundle() {
+      if (isSSR) return;
+      const content = await getSnapshot();
+      for (const image of assets.values())
+        this.emitFile({
+          type: "asset",
+          fileName: image.fileName,
+          source: image.data,
+        });
+      this.emitFile({
+        type: "asset",
+        fileName: SNAPSHOT_FILE,
+        source: JSON.stringify(content),
+      });
     },
     configureServer(server) {
       server.middlewares.use((req, res, next) => {
-        const image = devImages.get(req.url?.split("?", 1)[0] ?? "");
+        const url = req.url?.split("?", 1)[0] ?? "";
+        const image = url.startsWith(base)
+          ? assets.get(decodeURIComponent(url.slice(base.length)))
+          : undefined;
         if (!image) return next();
-        res.setHeader("Content-Type", "image/webp");
+        res.setHeader("Content-Type", image.mime);
         res.setHeader("Cache-Control", "no-cache");
-        res.end(image);
+        res.end(image.data);
       });
-      // Directory watching also catches newly added/deleted Markdown files.
-      const contentDir = path.join(root, "src/content");
-      const sharedDir = path.join(root, "shared");
-      server.watcher.add([contentDir, sharedDir]);
-      const reload = (file: string) => {
-        if (
-          !file.startsWith(contentDir + path.sep) &&
-          !file.startsWith(sharedDir + path.sep)
-        )
-          return;
-        for (const [id, module] of server.moduleGraph.idToModuleMap) {
-          if (id.startsWith("\0virtual:"))
-            server.moduleGraph.invalidateModule(module);
-        }
-        server.ws.send({ type: "full-reload" });
-      };
-      server.watcher.on("add", reload).on("unlink", reload);
+      server.watcher.add([
+        path.join(root, "src/content"),
+        path.join(root, "shared"),
+        path.join(root, "public"),
+      ]);
+      const onFile = (file: string) => reload(file, server);
+      server.watcher.on("add", onFile).on("unlink", onFile);
       server.httpServer?.once("close", () => {
-        server.watcher.off("add", reload).off("unlink", reload);
+        server.watcher.off("add", onFile).off("unlink", onFile);
       });
     },
     handleHotUpdate({ file, server }) {
-      if (
-        !file.startsWith(path.join(root, "src/content") + path.sep) &&
-        !file.startsWith(path.join(root, "shared") + path.sep)
-      )
-        return;
-      for (const [id, module] of server.moduleGraph.idToModuleMap) {
-        if (id.startsWith("\0virtual:"))
-          server.moduleGraph.invalidateModule(module);
-      }
-      server.ws.send({ type: "full-reload" });
-      return [];
+      if (!isBuild && reload(file, server)) return [];
     },
   };
-}
-
-export async function generatePostsMetaModule(root: string): Promise<string> {
-  const posts = [];
-  for (const file of postFiles(root)) {
-    posts.push(await parsePostMeta(path.join(root, "src/content/posts", file)));
-  }
-  return `export const posts = ${JSON.stringify(posts)};\n`;
-}
-
-export function generatePostLoadersModule(root: string): string {
-  const entries = postFiles(root).map(file => {
-    const slug = path.basename(file, ".md");
-    return `[${JSON.stringify(slug)}]: () => import(${JSON.stringify(POST_PREFIX + slug)})`;
-  });
-  return `export const postLoaders = {${entries.join(",\n")}};\n`;
-}
-
-export async function generatePostModule(
-  root: string,
-  slug: string,
-  emitImage: (image: OptimizedImage, absolute: string) => string = image =>
-    JSON.stringify(`/${image.fileName}`)
-): Promise<string> {
-  if (!postFiles(root).includes(`${slug}.md`))
-    throw new Error(`Unknown post: ${slug}`);
-  const filePath = path.join(root, "src/content/posts", `${slug}.md`);
-  const imports: string[] = [];
-  const images: { token: string; variable: string }[] = [];
-  const post = await parsePost(filePath, {
-    async resolveImage(src) {
-      const absolute = localImagePath(src, filePath, root);
-      if (!absolute) return src;
-      const variable = `img_${images.length}`;
-      const token = `__POST_IMAGE_${images.length}__`;
-      if (isRasterImage(absolute)) {
-        const image = await optimizeImage(absolute);
-        imports.push(`const ${variable} = ${emitImage(image, absolute)};`);
-        images.push({ token, variable });
-        return { src: token, width: image.width, height: image.height };
-      }
-      if (src.startsWith("/")) return src;
-      const specifier = `/${path.relative(root, absolute).split(path.sep).join("/")}?url`;
-      imports.push(`import ${variable} from ${JSON.stringify(specifier)};`);
-      images.push({ token, variable });
-      return token;
-    },
-  });
-  const { html: renderedHtml, ...data } = post;
-  let html = JSON.stringify(renderedHtml);
-  for (const { token, variable } of images)
-    html = html.split(token).join(`" + ${variable} + "`);
-  return `${imports.join("\n")}\nexport default { ...${JSON.stringify(data)}, html: ${html} };\n`;
-}
-
-async function generatePagesModule(root: string): Promise<string> {
-  const pagesDir = path.join(root, "src/content/pages");
-  const entries: string[] = [];
-  for (const file of fs
-    .readdirSync(pagesDir)
-    .filter(file => file.endsWith(".md"))
-    .sort()) {
-    const page = await parsePage(path.join(pagesDir, file));
-    entries.push(
-      `${JSON.stringify(path.basename(file, ".md"))}: ${JSON.stringify(page)}`
-    );
-  }
-  return `export const pages = {${entries.join(",\n")}};\n`;
 }

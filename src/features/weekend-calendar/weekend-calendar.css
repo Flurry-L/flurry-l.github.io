@@ -85,7 +85,7 @@
 .calendar-panel {
   display: grid;
   grid-template-columns: minmax(230px, 0.82fr) minmax(0, 1.18fr);
-  align-items: start;
+  align-items: stretch;
 }
 
 .calendar-panel[hidden] {
@@ -184,16 +184,17 @@ button.calendar-day {
 
 .calendar-agenda {
   display: flex;
-  max-height: var(--calendar-month-height, none);
+  box-sizing: border-box;
+  height: 0;
   min-width: 0;
-  min-height: 0;
+  min-height: 100%;
   flex-direction: column;
   padding: 20px;
   border-left: 1px solid var(--border);
 }
 
 .calendar-agenda[data-expanded="true"] {
-  max-height: none;
+  height: auto;
 }
 
 .calendar-agenda h4 {
@@ -374,6 +375,13 @@ button.calendar-day {
   }
 
   .calendar-agenda {
+    height: auto;
+    max-height: 24rem;
+    min-height: 0;
     border-left: 0;
+  }
+
+  .calendar-agenda[data-expanded="true"] {
+    max-height: none;
   }
 }

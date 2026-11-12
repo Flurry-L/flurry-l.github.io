@@ -3,9 +3,8 @@ import { onMounted, ref } from "vue";
 
 import PostList from "../components/PostList.vue";
 import { POSTS } from "../config";
-import { getSortedPosts } from "../lib/posts";
+import { posts } from "../lib/posts";
 
-const posts = getSortedPosts();
 const initialCount = ref(POSTS.perIndex);
 
 onMounted(() => {

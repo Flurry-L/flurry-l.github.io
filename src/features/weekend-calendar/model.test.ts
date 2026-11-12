@@ -1,8 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { parseCalendarDate } from "./date";
+import {
+  parseCalendarDate,
+  parseWeekendCalendar,
+} from "../../../shared/weekend-calendar";
 import { buildWeekendCalendar } from "./model";
-import { parseWeekendCalendar } from "./schema";
 
 describe("buildWeekendCalendar", () => {
   it("sorts events and preserves source order for events on the same date", () => {

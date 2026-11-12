@@ -9,11 +9,10 @@ import SearchDialog from "./SearchDialog.vue";
 interface NavItem {
   to: string;
   label: string;
-  exact?: boolean;
 }
 
 const navItems: NavItem[] = [
-  { to: "/", label: "首页", exact: true },
+  { to: "/", label: "首页" },
   { to: "/links", label: "友链" },
   { to: "/about", label: "关于" },
 ];
@@ -24,11 +23,6 @@ const menuOpen = ref(false);
 const searchOpen = ref(false);
 const searchShortcut = ref("Ctrl K");
 const githubUrl = SOCIALS.find(social => social.name === "github")?.url ?? "#";
-
-function isActive(item: NavItem): boolean {
-  if (item.exact) return route.path === item.to;
-  return route.path.startsWith(item.to);
-}
 
 function closeMenu() {
   menuOpen.value = false;
@@ -106,9 +100,8 @@ onBeforeUnmount(() => {
             :key="item.to"
             :to="item.to"
             class="hover:text-accent transition-colors"
-            :class="
-              isActive(item) ? 'text-accent font-medium' : 'text-foreground'
-            "
+            active-class=""
+            exact-active-class="text-accent font-medium"
           >
             {{ item.label }}
           </RouterLink>
@@ -265,7 +258,8 @@ onBeforeUnmount(() => {
         :key="item.to"
         :to="item.to"
         class="hover:text-accent block rounded-md px-2 py-2 text-sm transition-colors"
-        :class="isActive(item) ? 'text-accent font-medium' : 'text-foreground'"
+        active-class=""
+        exact-active-class="text-accent font-medium"
         @click="closeMenu"
       >
         {{ item.label }}

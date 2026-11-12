@@ -7,7 +7,7 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "vite-ssg build && node scripts/copy-404.mjs && node scripts/generate-rss.mjs && node scripts/build-search-index.mjs",
+    "build": "vite-ssg build && pagefind --site dist --glob \"{posts/*/index.html,about/index.html}\" --force-language zh",
     "preview": "vite preview",
     "format:check": "prettier --check .",
     "format": "prettier --write .",
@@ -39,6 +39,7 @@
     "katex": "^0.18.1",
     "markdown-it": "^14.3.0",
     "markdown-it-anchor": "^10.1.0",
+    "mrmime": "^2.0.1",
     "pagefind": "^1.5.2",
     "prettier": "^3.9.6",
     "prettier-plugin-tailwindcss": "^0.8.1",

@@ -1,10 +1,26 @@
+export interface CalendarDateParts {
+  year: number;
+  month: number;
+  day: number;
+}
+
+export interface WeekendCalendarEvent {
+  date: string;
+  text: string;
+}
+
+export interface WeekendCalendarInput {
+  summary: string;
+  events: WeekendCalendarEvent[];
+}
+
 export const CALENDAR_DATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
 
-export function toUtcDate({ year, month, day }) {
+export function toUtcDate({ year, month, day }: CalendarDateParts) {
   return new Date(Date.UTC(year, month - 1, day));
 }
 
-export function parseCalendarDate(value) {
+export function parseCalendarDate(value: string): CalendarDateParts {
   if (typeof value !== "string")
     throw new TypeError("Calendar date must be a string");
   const match = CALENDAR_DATE_PATTERN.exec(value);
@@ -29,12 +45,12 @@ export function parseCalendarDate(value) {
   return parts;
 }
 
-export function parseWeekendCalendar(input) {
+export function parseWeekendCalendar(input: unknown): WeekendCalendarInput {
   if (typeof input !== "object" || input === null || Array.isArray(input)) {
     throw new TypeError("Calendar must be an object");
   }
 
-  const { summary, events } = input;
+  const { summary, events } = input as Record<string, unknown>;
 
   if (typeof summary !== "string" || summary.trim() === "") {
     throw new TypeError("Calendar summary cannot be empty");
@@ -49,7 +65,9 @@ export function parseWeekendCalendar(input) {
       if (typeof event !== "object" || event === null || Array.isArray(event)) {
         throw new TypeError("Calendar event must be an object");
       }
-      const { date, text } = event;
+      const { date, text } = event as Record<string, unknown>;
+      if (typeof date !== "string")
+        throw new TypeError("Calendar date must be a string");
       parseCalendarDate(date);
       if (typeof text !== "string" || text.trim() === "") {
         throw new TypeError("Calendar event text cannot be empty");
