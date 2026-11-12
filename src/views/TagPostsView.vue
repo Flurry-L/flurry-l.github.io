@@ -12,7 +12,7 @@ const posts = computed(() => getPostsByTag(tag.value));
 </script>
 
 <template>
-  <h1 class="mb-6 text-2xl font-bold tracking-tight">
+  <h1 class="mb-6 text-2xl font-bold">
     标签：<span class="text-accent">#{{ tag }}</span>
   </h1>
   <template v-if="posts.length > 0">

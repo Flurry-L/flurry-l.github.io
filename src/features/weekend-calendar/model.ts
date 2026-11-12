@@ -1,8 +1,4 @@
-import {
-  parseCalendarDate,
-  toUtcDate,
-  type WeekendCalendarEvent,
-} from "../../../shared/weekend-calendar";
+import type { WeekendCalendarEvent } from "../../types/post";
 
 const WEEKDAY_NAMES = [
   "周日",
@@ -34,7 +30,6 @@ export interface CalendarMonth {
   year: number;
   month: number;
   label: string;
-  shortLabel: string;
   firstDayOffset: number;
   days: CalendarDay[];
   agenda: CalendarAgendaDay[];
@@ -48,51 +43,32 @@ export interface WeekendCalendarModel {
 }
 
 function formatRange(first: CalendarMonth, last: CalendarMonth) {
-  if (first.key === last.key) return `${first.year} 年 ${first.month} 月`;
+  if (first.key === last.key) return `${first.year}年${first.month}月`;
   if (first.year === last.year)
-    return `${first.year} 年 ${first.month} 月至 ${last.month} 月`;
-  return `${first.year} 年 ${first.month} 月至 ${last.year} 年 ${last.month} 月`;
+    return `${first.year}年${first.month}月至${last.month}月`;
+  return `${first.year}年${first.month}月至${last.year}年${last.month}月`;
 }
 
 export function buildWeekendCalendar(
   events: readonly WeekendCalendarEvent[]
 ): WeekendCalendarModel {
-  const sortedEvents = events
-    .map((event, sourceIndex) => ({
-      event,
-      sourceIndex,
-      parts: parseCalendarDate(event.date),
-    }))
-    .sort(
-      (left, right) =>
-        left.event.date.localeCompare(right.event.date) ||
-        left.sourceIndex - right.sourceIndex
-    );
-  const eventsByMonth = new Map<string, typeof sortedEvents>();
-
-  for (const entry of sortedEvents) {
-    const key = entry.event.date.slice(0, 7);
+  const sortedEvents = [...events].sort((a, b) => a.date.localeCompare(b.date));
+  const eventsByMonth = new Map<string, WeekendCalendarEvent[]>();
+  for (const event of sortedEvents) {
+    const key = event.date.slice(0, 7);
     const monthEvents = eventsByMonth.get(key) ?? [];
-    monthEvents.push(entry);
+    monthEvents.push(event);
     eventsByMonth.set(key, monthEvents);
   }
-
-  const spansYears =
-    sortedEvents.length > 0 &&
-    sortedEvents[0].parts.year !== sortedEvents.at(-1)?.parts.year;
   const months: CalendarMonth[] = [...eventsByMonth.entries()].map(
     ([key, monthEntries]) => {
-      const { year, month } = monthEntries[0].parts;
-      const daysInMonth = toUtcDate({
-        year,
-        month: month + 1,
-        day: 0,
-      }).getUTCDate();
+      const [year, month] = key.split("-").map(Number);
+      const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
       const firstDayOffset =
-        (toUtcDate({ year, month, day: 1 }).getUTCDay() + 6) % 7;
+        (new Date(Date.UTC(year, month - 1, 1)).getUTCDay() + 6) % 7;
       const eventsByDate = new Map<string, WeekendCalendarEvent[]>();
 
-      for (const { event } of monthEntries) {
+      for (const event of monthEntries) {
         const dayEvents = eventsByDate.get(event.date) ?? [];
         dayEvents.push(event);
         eventsByDate.set(event.date, dayEvents);
@@ -111,19 +87,22 @@ export function buildWeekendCalendar(
             date,
             day,
             events: dayEvents,
-            accessibleLabel: `${year} 年 ${month} 月 ${day} 日${eventDescription}`,
+            accessibleLabel: `${year}年${month}月${day}日${eventDescription}`,
           };
         }
       );
       const agenda = [...eventsByDate.entries()].map(
         ([date, dayEvents]): CalendarAgendaDay => {
-          const parts = parseCalendarDate(date);
+          const day = Number(date.slice(8));
 
           return {
             date,
-            day: parts.day,
-            month: parts.month,
-            weekday: WEEKDAY_NAMES[toUtcDate(parts).getUTCDay()],
+            day,
+            month,
+            weekday:
+              WEEKDAY_NAMES[
+                new Date(Date.UTC(year, month - 1, day)).getUTCDay()
+              ],
             events: dayEvents,
           };
         }
@@ -133,8 +112,7 @@ export function buildWeekendCalendar(
         key,
         year,
         month,
-        label: `${year} 年 ${month} 月`,
-        shortLabel: spansYears ? `${year} / ${month}` : `${month} 月`,
+        label: `${year}年${month}月`,
         firstDayOffset,
         days,
         agenda,

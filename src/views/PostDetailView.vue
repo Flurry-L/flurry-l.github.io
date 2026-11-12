@@ -1,65 +1,72 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import {
+  computed,
+  defineAsyncComponent,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  watch,
+} from "vue";
 import { useRoute } from "vue-router";
+import { IconList } from "@tabler/icons-vue";
+import { throttle } from "es-toolkit/function";
+import { useEventListener } from "@vueuse/core";
 
-import FormattedDate from "../components/FormattedDate.vue";
 import GiscusComments from "../components/GiscusComments.vue";
+import MarkdownContent from "../components/MarkdownContent.vue";
 import PostToc from "../components/PostToc.vue";
 import TagPill from "../components/TagPill.vue";
-import { useCodeCopy } from "../composables/useCodeCopy";
-import { useImageZoom } from "../composables/useImageZoom";
-import WeekendCalendar from "../features/weekend-calendar/WeekendCalendar.vue";
 import { getAdjacentPosts } from "../lib/posts";
+
+const WeekendCalendar = defineAsyncComponent(
+  () => import("../features/weekend-calendar/WeekendCalendar.vue")
+);
 
 const route = useRoute();
 const slug = computed(() => String(route.params.slug));
 const post = computed(() => route.meta.post);
-const loadFailed = computed(() => route.meta.postLoadFailed);
 const mounted = ref(false);
 const adjacent = computed(() => getAdjacentPosts(slug.value));
-const contentRef = ref<HTMLElement>();
+const contentRef = ref<InstanceType<typeof MarkdownContent>>();
 const tocDialog = ref<HTMLDialogElement>();
 const activeHeadingId = ref("");
-let headingFrame: number | undefined;
+let headings: HTMLElement[] = [];
 
 function updateActiveHeading() {
-  headingFrame = undefined;
   let active = "";
-  for (const item of post.value?.toc ?? []) {
-    const heading = document.getElementById(item.id);
-    if (heading && heading.getBoundingClientRect().top <= 120) active = item.id;
+  for (const heading of headings) {
+    if (heading.getBoundingClientRect().top > 120) break;
+    active = heading.id;
   }
   activeHeadingId.value = active;
 }
 
-function scheduleHeadingUpdate() {
-  if (headingFrame === undefined)
-    headingFrame = requestAnimationFrame(updateActiveHeading);
+function refreshHeadings() {
+  headings = [
+    ...(contentRef.value?.element?.querySelectorAll<HTMLElement>(
+      "h2[id], h3[id]"
+    ) ?? []),
+  ];
+  updateActiveHeading();
 }
+const scheduleHeadingUpdate = throttle(updateActiveHeading, 100);
 
 onMounted(() => {
   mounted.value = true;
-  window.addEventListener("scroll", scheduleHeadingUpdate, { passive: true });
-  window.addEventListener("resize", scheduleHeadingUpdate);
-  scheduleHeadingUpdate();
+  refreshHeadings();
 });
-onBeforeUnmount(() => {
-  window.removeEventListener("scroll", scheduleHeadingUpdate);
-  window.removeEventListener("resize", scheduleHeadingUpdate);
-  if (headingFrame !== undefined) cancelAnimationFrame(headingFrame);
-});
+useEventListener("scroll", scheduleHeadingUpdate, { passive: true });
+useEventListener("resize", scheduleHeadingUpdate);
+onBeforeUnmount(() => scheduleHeadingUpdate.cancel());
 watch(
   post,
   () => {
     activeHeadingId.value = "";
     tocDialog.value?.close();
-    if (mounted.value) scheduleHeadingUpdate();
+    refreshHeadings();
   },
   { flush: "post" }
 );
-
-useCodeCopy(contentRef);
-useImageZoom(contentRef, () => post.value?.html);
 
 function onTocClick(event: MouseEvent) {
   if ((event.target as HTMLElement).closest("a")) tocDialog.value?.close();
@@ -67,33 +74,22 @@ function onTocClick(event: MouseEvent) {
 </script>
 
 <template>
-  <div v-if="loadFailed" class="py-16 text-center" role="alert">
-    <h1 class="text-2xl font-bold">文章加载失败</h1>
-    <p class="text-muted-foreground mt-3">请检查网络连接后重新加载。</p>
-    <a
-      :href="route.fullPath"
-      class="text-accent mt-6 inline-block hover:underline"
-      >重新加载</a
-    >
-  </div>
-  <template v-else-if="post">
+  <template v-if="post">
     <div class="relative mx-auto max-w-3xl">
       <article class="min-w-0" data-pagefind-body>
         <header class="border-border border-b pb-6">
-          <h1
-            data-pagefind-meta="title"
-            class="text-3xl font-bold tracking-tight"
-          >
+          <h1 data-pagefind-meta="title" class="text-3xl font-bold">
             {{ post.title }}
           </h1>
           <div
             data-pagefind-ignore="all"
-            class="text-muted-foreground mt-4 flex flex-wrap items-center gap-3 text-sm"
+            class="text-muted-foreground mt-4 flex flex-wrap items-center gap-3 text-sm tabular-nums"
           >
-            <FormattedDate :date="post.pubDatetime" />
+            <time :datetime="post.pubDatetime">{{ post.dateLabel }}</time>
             <span
-              >{{ post.wordCount.toLocaleString("zh-CN") }} 字 · 约
-              {{ post.readingMinutes }} 分钟阅读</span
+              >{{ post.wordCount.toLocaleString("zh-CN") }}字 · 约{{
+                post.readingMinutes
+              }}分钟阅读</span
             >
             <div v-if="post.tags.length > 0" class="flex flex-wrap gap-1.5">
               <TagPill v-for="tag in post.tags" :key="tag" :tag="tag" />
@@ -101,19 +97,13 @@ function onTocClick(event: MouseEvent) {
           </div>
         </header>
 
-        <!-- eslint-disable vue/no-v-html -->
-        <div
-          ref="contentRef"
-          class="prose mt-8 max-w-none"
-          v-html="post.html"
-        />
-        <!-- eslint-enable vue/no-v-html -->
+        <MarkdownContent ref="contentRef" class="mt-8" :html="post.html" />
 
         <WeekendCalendar
           v-if="post.weekendCalendar"
+          :key="post.slug"
           :summary="post.weekendCalendar.summary"
           :events="post.weekendCalendar.events"
-          :instance-id="post.slug"
         />
 
         <nav
@@ -123,7 +113,7 @@ function onTocClick(event: MouseEvent) {
         >
           <RouterLink
             v-if="adjacent.older"
-            :to="`/posts/${adjacent.older.slug}`"
+            :to="{ name: 'post', params: { slug: adjacent.older.slug } }"
             class="border-border hover:border-accent rounded-md border p-4 transition-colors"
           >
             <span class="text-muted-foreground text-xs">上一篇</span>
@@ -134,7 +124,7 @@ function onTocClick(event: MouseEvent) {
           <span v-else />
           <RouterLink
             v-if="adjacent.newer"
-            :to="`/posts/${adjacent.newer.slug}`"
+            :to="{ name: 'post', params: { slug: adjacent.newer.slug } }"
             class="border-border hover:border-accent rounded-md border p-4 text-right transition-colors"
           >
             <span class="text-muted-foreground text-xs">下一篇</span>
@@ -145,7 +135,6 @@ function onTocClick(event: MouseEvent) {
         </nav>
 
         <GiscusComments
-          :key="post.slug"
           :term="`posts/${post.slug}`"
           data-pagefind-ignore="all"
         />
@@ -170,19 +159,7 @@ function onTocClick(event: MouseEvent) {
           class="border-border bg-background text-muted-foreground hover:border-accent hover:text-accent order-1 flex size-11 items-center justify-center rounded-full border shadow-sm transition-colors motion-reduce:transition-none xl:hidden"
           @click="tocDialog?.showModal()"
         >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            class="size-5"
-            aria-hidden="true"
-          >
-            <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
-          </svg>
+          <IconList class="size-5" aria-hidden="true" />
         </button>
       </Teleport>
       <dialog

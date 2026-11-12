@@ -16,8 +16,7 @@ useHead(() => {
   const post = route.name === "post" ? route.meta.post : undefined;
   const title =
     route.name === "post"
-      ? (post?.title ??
-        (route.meta.postLoadFailed ? "文章加载失败" : "文章不存在"))
+      ? (post?.title ?? "文章不存在")
       : route.name === "tag"
         ? `标签：${String(route.params.tag)}`
         : route.meta.title;
@@ -57,16 +56,22 @@ useHead(() => {
 </script>
 
 <template>
-  <div
-    :data-page-path="route.path.replace(/\/$/, '') || '/'"
-    class="bg-background text-foreground flex min-h-screen flex-col"
-  >
+  <div class="bg-background text-foreground flex min-h-screen flex-col">
+    <a
+      href="#main-content"
+      class="bg-background text-accent sr-only rounded-md px-4 py-2 focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50"
+      >跳到正文</a
+    >
     <SiteHeader />
     <!-- One bottom anchor for page actions; no empty slot on pages without a TOC. -->
     <div id="floating-actions" class="floating-actions">
       <BackToTop />
     </div>
-    <main class="mx-auto w-full max-w-3xl flex-1 px-5 pt-10 pb-16 sm:px-6">
+    <main
+      id="main-content"
+      tabindex="-1"
+      class="mx-auto w-full max-w-3xl flex-1 px-5 pt-10 pb-16 sm:px-6"
+    >
       <RouterView />
     </main>
     <SiteFooter />

@@ -3,7 +3,7 @@ declare module "virtual:posts-meta" {
 }
 
 declare module "virtual:post-loaders" {
-  export const postLoaders: Record<
+  export const postLoaders: Map<
     string,
     () => Promise<{ default: import("./post").Post }>
   >;
@@ -22,8 +22,4 @@ declare module "virtual:pages" {
   }
 
   export const pages: Record<string, Page>;
-}
-
-declare module "virtual:pages-meta" {
-  export const pages: Record<string, { title: string; description: string }>;
 }

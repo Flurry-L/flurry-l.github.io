@@ -10,10 +10,7 @@
     "esModuleInterop": true,
     "resolveJsonModule": true,
     "skipLibCheck": true,
-    "useDefineForClassFields": true,
-    "paths": {
-      "@/*": ["./src/*"]
-    }
+    "useDefineForClassFields": true
   },
   "include": ["src/**/*.ts", "src/**/*.vue", "vite/**/*.ts", "tests/**/*.ts"]
 }

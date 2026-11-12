@@ -1,12 +1,12 @@
 import mediumZoom from "medium-zoom";
-import { onBeforeUnmount, watch, type Ref, type WatchSource } from "vue";
+import { watch, type Ref, type WatchSource } from "vue";
 
 /** The library owns zoom/close/animation; this adapter adds keyboard access. */
 export function useImageZoom(
-  container: Ref<HTMLElement | undefined>,
+  container: Readonly<Ref<HTMLElement | null>>,
   content: WatchSource<string | undefined>
 ) {
-  const stop = watch(
+  watch(
     [container, content],
     ([element], _previous, onCleanup) => {
       const images = [
@@ -57,5 +57,4 @@ export function useImageZoom(
     },
     { immediate: true, flush: "post" }
   );
-  onBeforeUnmount(stop);
 }

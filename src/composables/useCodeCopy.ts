@@ -1,7 +1,7 @@
 import { watch, type Ref } from "vue";
 
 /** One delegated listener also handles code blocks replaced by v-html. */
-export function useCodeCopy(container: Ref<HTMLElement | undefined>) {
+export function useCodeCopy(container: Readonly<Ref<HTMLElement | null>>) {
   watch(
     container,
     (element, _previous, onCleanup) => {

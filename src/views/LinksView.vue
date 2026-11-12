@@ -3,7 +3,7 @@ import { links } from "../data/links";
 </script>
 
 <template>
-  <h1 class="mb-2 text-2xl font-bold tracking-tight">友情链接</h1>
+  <h1 class="mb-2 text-2xl font-bold">友情链接</h1>
   <ul class="mt-8 grid gap-4 sm:grid-cols-2">
     <li v-for="link in links" :key="link.url" class="min-w-0">
       <a

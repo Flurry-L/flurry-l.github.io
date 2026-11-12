@@ -10,7 +10,6 @@ export default tseslint.config(
       "node_modules/",
       ".vite-ssg-temp/",
       "public/",
-      ".astro/",
       "draft/",
       "**/*.css",
     ],

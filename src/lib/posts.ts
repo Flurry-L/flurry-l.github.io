@@ -1,17 +1,19 @@
 import { posts } from "virtual:posts-meta";
 import { postLoaders } from "virtual:post-loaders";
 
-import {
-  collectTags,
-  filterByTag,
-  type PostMeta,
-  type TagCount,
-} from "./post-utils";
-
-import type { Post } from "../types/post";
+import type { Post, PostMeta } from "../types/post";
 
 export type { Post, PostMeta, TocItem } from "../types/post";
-export type { TagCount } from "./post-utils";
+
+export interface TagCount {
+  tag: string;
+  count: number;
+}
+
+export interface YearGroup {
+  year: number;
+  posts: PostMeta[];
+}
 
 export { posts };
 
@@ -20,16 +22,35 @@ export { posts };
  * The router awaits the selected body before SSR and hydration.
  */
 export async function getPostBySlug(slug: string): Promise<Post | undefined> {
-  const load = Object.hasOwn(postLoaders, slug) ? postLoaders[slug] : undefined;
-  return load ? (await load()).default : undefined;
+  return (await postLoaders.get(slug)?.())?.default;
 }
 
 export function getUniqueTags(items: PostMeta[] = posts): TagCount[] {
-  return collectTags(items);
+  const counts = new Map<string, number>();
+  for (const post of items) {
+    for (const tag of post.tags) {
+      counts.set(tag, (counts.get(tag) ?? 0) + 1);
+    }
+  }
+  return [...counts.entries()]
+    .map(([tag, count]) => ({ tag, count }))
+    .sort((a, b) => a.tag.localeCompare(b.tag, "zh-CN"));
 }
 
 export function getPostsByTag(tag: string): PostMeta[] {
-  return filterByTag(posts, tag);
+  return posts.filter(post => post.tags.includes(tag));
+}
+
+export function groupPostsByYear(items: PostMeta[] = posts): YearGroup[] {
+  const groups = new Map<number, PostMeta[]>();
+  for (const post of items) {
+    const list = groups.get(post.year) ?? [];
+    list.push(post);
+    groups.set(post.year, list);
+  }
+  return [...groups.entries()]
+    .sort(([a], [b]) => b - a)
+    .map(([year, posts]) => ({ year, posts }));
 }
 
 /** Adjacent posts for prev/next navigation, based on the sorted list. */

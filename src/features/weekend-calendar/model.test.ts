@@ -1,9 +1,5 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  parseCalendarDate,
-  parseWeekendCalendar,
-} from "../../../shared/weekend-calendar";
 import { buildWeekendCalendar } from "./model";
 
 describe("buildWeekendCalendar", () => {
@@ -30,23 +26,19 @@ describe("buildWeekendCalendar", () => {
       { date: "2026-06-28", text: "end" },
     ]);
 
-    expect(calendar.rangeLabel).toBe("2026 年 2 月至 6 月");
-    expect(calendar.months.map(month => month.shortLabel)).toEqual([
-      "2 月",
-      "6 月",
-    ]);
+    expect(calendar.rangeLabel).toBe("2026年2月至6月");
   });
 
-  it("formats cross-year ranges and disambiguates their tabs", () => {
+  it("formats cross-year ranges and month labels", () => {
     const calendar = buildWeekendCalendar([
       { date: "2025-12-28", text: "start" },
       { date: "2026-01-03", text: "end" },
     ]);
 
-    expect(calendar.rangeLabel).toBe("2025 年 12 月至 2026 年 1 月");
-    expect(calendar.months.map(month => month.shortLabel)).toEqual([
-      "2025 / 12",
-      "2026 / 1",
+    expect(calendar.rangeLabel).toBe("2025年12月至2026年1月");
+    expect(calendar.months.map(month => month.label)).toEqual([
+      "2025年12月",
+      "2026年1月",
     ]);
   });
 
@@ -59,31 +51,5 @@ describe("buildWeekendCalendar", () => {
     expect(february.days).toHaveLength(29);
     expect(february.firstDayOffset).toBe(3);
     expect(february.agenda[0].weekday).toBe("周四");
-  });
-});
-
-describe("calendar input validation", () => {
-  it("rejects impossible dates and blank copy", () => {
-    expect(() => parseCalendarDate("2025-02-29")).toThrow(
-      "Invalid calendar date"
-    );
-    expect(() =>
-      parseWeekendCalendar({
-        summary: " ",
-        events: [{ date: "2025-02-29", text: "" }],
-      })
-    ).toThrow(TypeError);
-  });
-
-  it("normalizes surrounding whitespace in authored copy", () => {
-    const result = parseWeekendCalendar({
-      summary: " summary ",
-      events: [{ date: "2026-07-12", text: " event " }],
-    });
-
-    expect(result).toEqual({
-      summary: "summary",
-      events: [{ date: "2026-07-12", text: "event" }],
-    });
   });
 });

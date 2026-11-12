@@ -3,28 +3,44 @@ import os from "node:os";
 import path from "node:path";
 
 import sharp from "sharp";
-import { afterEach, describe, expect, it } from "vitest";
+import { JSDOM } from "jsdom";
+import { build as viteBuild } from "vite";
+import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
-import { parseWeekendCalendar } from "../shared/weekend-calendar";
-import { buildContent, postMeta } from "../vite/plugins/content";
+import { buildContent, contentPlugin, postMeta } from "../vite/plugins/content";
 import { prepareImage } from "../vite/plugins/images";
-import { buildFeeds } from "../vite/plugins/publish";
+import { buildRss, buildSitemap, rssHtml } from "../vite/plugins/publish";
 import {
   extractToc,
   getMarkdown,
   readPostSource,
   renderPost,
   readingStats,
+  publicationDate,
   type RenderOptions,
 } from "../vite/plugins/markdown";
 
-import { formatDate, getYear, groupPostsByYear } from "../src/lib/format";
-import { collectTags, filterByTag, type PostMeta } from "../src/lib/post-utils";
+import {
+  getUniqueTags,
+  getPostsByTag,
+  groupPostsByYear,
+  posts,
+  type PostMeta,
+} from "../src/lib/posts";
+
+vi.mock("virtual:posts-meta", () => ({ posts: [] }));
+vi.mock("virtual:post-loaders", () => ({ postLoaders: new Map() }));
+
+// Shiki loads its grammars and WASM once; cold CI startup needs its own budget.
+beforeAll(async () => {
+  await getMarkdown();
+}, 20_000);
 
 function makePost(overrides: Partial<PostMeta> & { slug: string }): PostMeta {
   return {
     title: overrides.slug,
     pubDatetime: "2025-01-01T00:00:00.000Z",
+    ...publicationDate(overrides.pubDatetime ?? "2025-01-01T00:00:00.000Z"),
     description: "",
     tags: [],
     excerpt: "",
@@ -36,6 +52,34 @@ const NOW = new Date("2026-07-26T00:00:00.000Z").getTime();
 const MARGIN = 15 * 60 * 1000;
 
 describe("build-time publication", () => {
+  it("reuses published content between client and SSR builds", async () => {
+    const { root, postsDir } = contentFixture({ first: "Original content" });
+    const entry = path.join(root, "entry.js");
+    fs.writeFileSync(entry, 'export { default } from "virtual:post/first";');
+    const config = {
+      root,
+      configFile: false as const,
+      logLevel: "silent" as const,
+      plugins: [contentPlugin()],
+    };
+    const client = await viteBuild({
+      ...config,
+      build: { write: false, lib: { entry, formats: ["es"] } },
+    });
+    fs.writeFileSync(
+      path.join(postsDir, "first.md"),
+      "Changed during the build"
+    );
+    const ssr = await viteBuild({
+      ...config,
+      build: { write: false, ssr: entry },
+    });
+    for (const output of [client, ssr]) {
+      expect(JSON.stringify(output)).toContain("Original content");
+      expect(JSON.stringify(output)).not.toContain("Changed during the build");
+    }
+  });
+
   it("freezes sorted published content at the margin boundary and never renders future assets", async () => {
     const { root } = contentFixture(
       {
@@ -52,50 +96,90 @@ describe("build-time publication", () => {
       }
     );
     const content = await buildContent(root, "/", NOW, MARGIN);
-    expect(content.posts.map(({ post }) => post.slug)).toEqual([
+    expect(content.posts.map(post => post.slug)).toEqual([
       "boundary",
       "newer",
       "old",
     ]);
     expect(JSON.stringify(content)).not.toContain("UNPUBLISHED_SECRET");
-    const { rss, sitemap } = buildFeeds(content);
+    const rss = buildRss(content);
+    const sitemap = await buildSitemap(
+      content,
+      content.posts.map(post => `/posts/${post.slug}`)
+    );
     expect(rss).not.toContain("future");
     expect(sitemap).not.toContain("future");
     expect(content.assets.size).toBe(0);
   });
+
+  it("publishes the rendered routes in the sitemap and excludes the error page", async () => {
+    const { root } = contentFixture({ first: "Article" });
+    const sitemap = await buildSitemap(await buildContent(root), [
+      "/",
+      "/posts/first",
+      "/notes",
+      "/404",
+    ]);
+    const xml = new JSDOM(sitemap, { contentType: "text/xml" }).window.document;
+    expect(
+      [...xml.querySelectorAll("loc")].map(node => node.textContent)
+    ).toEqual([
+      "https://blog.flurry.top/",
+      "https://blog.flurry.top/notes",
+      "https://blog.flurry.top/posts/first",
+    ]);
+    expect(xml.querySelector("lastmod")?.textContent).toBe(
+      "2025-01-01T00:00:00.000Z"
+    );
+  });
+
+  it("serializes sitemap URLs as XML while preserving encoded paths", async () => {
+    const { root } = contentFixture({ first: "Article" });
+    const route = "/posts/a%23b?x=1&y=2";
+    const sitemap = await buildSitemap(await buildContent(root), [route]);
+    const xml = new JSDOM(sitemap, { contentType: "text/xml" }).window.document;
+    expect(xml.querySelector("loc")?.textContent).toBe(
+      `https://blog.flurry.top${route}`
+    );
+  });
 });
 
 describe("tags", () => {
-  const posts = [
+  const items = [
     makePost({ slug: "a", tags: ["render", "math"] }),
     makePost({ slug: "b", tags: ["render"] }),
     makePost({ slug: "c", tags: [] }),
   ];
 
   it("collects unique tags with counts", () => {
-    expect(collectTags(posts)).toEqual([
+    expect(getUniqueTags(items)).toEqual([
       { tag: "math", count: 1 },
       { tag: "render", count: 2 },
     ]);
   });
 
   it("filters posts by tag", () => {
-    expect(filterByTag(posts, "render").map(post => post.slug)).toEqual([
-      "a",
-      "b",
-    ]);
-    expect(filterByTag(posts, "missing")).toEqual([]);
+    posts.push(...items);
+    expect(getPostsByTag("render").map(post => post.slug)).toEqual(["a", "b"]);
+    expect(getPostsByTag("missing")).toEqual([]);
   });
 });
 
 describe("date formatting (Asia/Shanghai)", () => {
   it("formats dates in Chinese", () => {
-    expect(formatDate("2024-11-19T14:25:00.000Z")).toBe("2024年11月19日");
+    expect(publicationDate("2024-11-19T14:25:00.000Z").dateLabel).toBe(
+      "2024年11月19日"
+    );
+    expect(publicationDate("2024-06-01T00:00:00.000Z").archiveDate).toBe(
+      "06-01"
+    );
   });
 
   it("uses the site timezone when the UTC date differs", () => {
-    expect(formatDate("2024-11-19T16:00:00.000Z")).toBe("2024年11月20日");
-    expect(getYear("2024-12-31T16:00:00.000Z")).toBe(2025);
+    expect(publicationDate("2024-11-19T16:00:00.000Z").dateLabel).toBe(
+      "2024年11月20日"
+    );
+    expect(publicationDate("2024-12-31T16:00:00.000Z").year).toBe(2025);
   });
 });
 
@@ -117,6 +201,7 @@ describe("groupPostsByYear", () => {
 const fixtureRoots: string[] = [];
 
 afterEach(() => {
+  posts.length = 0;
   for (const root of fixtureRoots.splice(0))
     fs.rmSync(root, { recursive: true, force: true });
 });
@@ -140,7 +225,7 @@ function contentFixture(
 }
 
 async function parsePost(filePath: string, options?: RenderOptions) {
-  return (await renderPost(await readPostSource(filePath), options)).post;
+  return renderPost(await readPostSource(filePath), options);
 }
 
 async function parsePostMeta(filePath: string) {
@@ -154,10 +239,30 @@ describe("content metadata", () => {
       second: "No explicit excerpt",
     });
     const content = await buildContent(root);
-    const posts = content.posts.map(({ post }) => postMeta(post));
+    const posts = content.posts.map(postMeta);
     expect(posts.map(post => Object.keys(post).sort())).toEqual([
-      ["description", "excerpt", "pubDatetime", "slug", "tags", "title"],
-      ["description", "excerpt", "pubDatetime", "slug", "tags", "title"],
+      [
+        "archiveDate",
+        "dateLabel",
+        "description",
+        "excerpt",
+        "pubDatetime",
+        "slug",
+        "tags",
+        "title",
+        "year",
+      ],
+      [
+        "archiveDate",
+        "dateLabel",
+        "description",
+        "excerpt",
+        "pubDatetime",
+        "slug",
+        "tags",
+        "title",
+        "year",
+      ],
     ]);
     expect(posts[0].excerpt).toBe("Visible excerpt");
     expect(posts[1].excerpt).toBe("");
@@ -230,7 +335,7 @@ describe("heading anchors and token-based TOC", () => {
       {}
     );
     expect(extractToc(tokens)).toEqual([
-      { depth: 2, id: "中文-标题-api-使用", text: "中文 标题 API & 使用" },
+      { depth: 2, id: "中文-标题-api--使用", text: "中文 标题 API & 使用" },
       { depth: 3, id: "child", text: "Child" },
     ]);
   });
@@ -248,6 +353,24 @@ describe("heading anchors and token-based TOC", () => {
 });
 
 describe("markdown reading metadata", () => {
+  it("joins Chinese soft wraps while retaining English spaces, hard breaks and code", async () => {
+    const { postsDir } = contentFixture({
+      first:
+        "中文软换行\n继续正文\n\nEnglish line\ncontinued text\n\n保留硬换行  \n下一行\n\n`代码Vue3`\n\n```text\n中文Vue3\n原样123\n```\n\n<!-- excerpt -->",
+    });
+    const post = await parsePost(path.join(postsDir, "first.md"));
+    const document = new JSDOM(post.html).window.document;
+    const paragraphs = document.querySelectorAll("p");
+    expect(paragraphs[0].textContent).toBe("中文软换行继续正文");
+    expect(paragraphs[1].textContent).toBe("English line\ncontinued text");
+    expect(paragraphs[2].querySelector("br")).not.toBeNull();
+    expect(paragraphs[3].textContent).toBe("代码Vue3");
+    expect(document.querySelector("pre code")?.textContent).toBe(
+      "中文Vue3\n原样123"
+    );
+    expect(post.excerpt).toContain("中文软换行继续正文");
+  });
+
   it.each<[string, number, number]>([
     ["", 0, 1],
     ["word ".repeat(200), 200, 1],
@@ -295,11 +418,67 @@ describe("markdown reading metadata", () => {
 });
 
 describe("RSS markdown rendering", () => {
+  it("serializes XML-sensitive metadata and HTML while preserving permalink GUIDs", async () => {
+    const { root } = contentFixture({ first: "Article" });
+    const content = await buildContent(root);
+    const title = 'A & <B> "quoted" ]]> C ]]>';
+    const description = "Description & <text> ]]> tail ]]>";
+    Object.assign(content.posts[0], {
+      slug: "a#b",
+      title,
+      description,
+      tags: ["C++ & <XML>"],
+      html: "<p>Text &amp; code</p><!-- first ]]> second ]]> -->",
+    });
+    const rss = buildRss(content);
+    const xml = new JSDOM(rss, { contentType: "text/xml" }).window.document;
+    const item = xml.querySelector("item")!;
+    expect(item.querySelector("title")?.textContent).toBe(title);
+    expect(item.querySelector("description")?.textContent).toBe(description);
+    expect(item.querySelector("category")?.textContent).toBe("C++ & <XML>");
+    expect(item.querySelector("guid")?.getAttribute("isPermaLink")).toBe(
+      "true"
+    );
+    expect(item.querySelector("guid")?.textContent).toBe(
+      "https://blog.flurry.top/posts/a%23b"
+    );
+    expect(
+      item.getElementsByTagNameNS(
+        "http://purl.org/rss/1.0/modules/content/",
+        "encoded"
+      )[0].textContent
+    ).toBe("<p>Text &amp; code</p><!-- first ]]> second ]]> -->");
+  });
+
+  it("renders Markdown once and adapts only real HTML attributes for RSS", async () => {
+    const { postsDir } = contentFixture({
+      first: '```html\n<a href="./literal">code</a>\n```',
+    });
+    const source = await readPostSource(path.join(postsDir, "first.md"));
+    const render = vi.spyOn((await getMarkdown()).renderer, "render");
+    const post = await renderPost(source);
+    expect(render).toHaveBeenCalledTimes(1);
+    render.mockRestore();
+
+    const html = `<a href='../next?q=1&amp;x=2'>next</a><a href='#heading'>section</a><img src="/photo.webp"><pre><code>&lt;a href="./literal"&gt;</code></pre><button>authored button</button>${post.html}`;
+    const adapted = rssHtml(html, "https://blog.flurry.top/posts/example");
+    expect(adapted).toContain(
+      'href="https://blog.flurry.top/next?q=1&amp;x=2"'
+    );
+    expect(adapted).toContain(
+      'href="https://blog.flurry.top/posts/example#heading"'
+    );
+    expect(adapted).toContain('src="https://blog.flurry.top/photo.webp"');
+    expect(adapted).toContain('&lt;a href="./literal"&gt;');
+    expect(adapted).toContain("<button>authored button</button>");
+    expect(adapted).not.toContain("data-code-controls");
+  });
+
   it("publishes highlighted code without interactive copy controls", async () => {
     const { root } = contentFixture({
       first: "```js\nconst rssValue = 1;\n```\n\n```\nplain RSS code\n```",
     });
-    const { rss } = buildFeeds(await buildContent(root));
+    const rss = buildRss(await buildContent(root));
     const body = rss.match(
       /<content:encoded><!\[CDATA\[([\s\S]*?)\]\]><\/content:encoded>/
     )?.[1];
@@ -310,7 +489,7 @@ describe("RSS markdown rendering", () => {
     expect(body).not.toMatch(
       /<button\b|code-copy-button|copy-icon|copied-icon|role="status"/
     );
-  }, 30_000);
+  });
 
   it("includes the complete calendar as escaped, chronological static events", async () => {
     const { postsDir } = contentFixture({ first: "Calendar article" });
@@ -322,12 +501,11 @@ describe("RSS markdown rendering", () => {
         { date: "2026-03-07", text: "Earlier <first>" },
       ],
     };
-    const { rss } = buildFeeds({
+    const rss = buildRss({
       posts: [await renderPost(source)],
       pages: {},
     });
     expect(rss).toContain("Weekend &lt;notes&gt;");
-    expect(rss).toContain("共 2 项");
     expect(rss).toContain("Later &amp; second");
     expect(rss.indexOf("Earlier &lt;first&gt;")).toBeLessThan(
       rss.indexOf("Later &amp; second")
@@ -336,48 +514,29 @@ describe("RSS markdown rendering", () => {
   });
 });
 
-describe("shared calendar validation", () => {
-  it("trims calendar text and accepts real leap dates", () => {
-    expect(
-      parseWeekendCalendar({
-        summary: " Summary ",
-        events: [{ date: "2024-02-29", text: " Event " }],
-      })
-    ).toEqual({
-      summary: "Summary",
-      events: [{ date: "2024-02-29", text: "Event" }],
-    });
-  });
-
-  it.each([
-    null,
-    [],
-    {},
-    false,
-    { summary: " ", events: [] },
-    { summary: "Calendar", events: [] },
-    { summary: "Calendar", events: [{ date: "2025-02-29", text: "Event" }] },
-    { summary: "Calendar", events: [{ date: "2024-13-01", text: "Event" }] },
-    { summary: "Calendar", events: [{ date: "2024-01-01", text: " " }] },
-    { summary: "Calendar", events: [null] },
-  ])("rejects malformed calendar %j", input => {
-    expect(() => parseWeekendCalendar(input)).toThrow(TypeError);
-  });
-
-  it("rejects a present invalid calendar during markdown rendering", async () => {
-    const { postsDir } = contentFixture({ first: "Body" });
-    const file = path.join(postsDir, "first.md");
-    fs.writeFileSync(
-      file,
-      "---\npubDatetime: 2025-01-01\nweekendCalendar: false\n---\nBody"
-    );
-    await expect(parsePost(file)).rejects.toThrow(
-      'Invalid weekendCalendar in post "first"'
-    );
-  });
-});
-
 describe("build-only image optimization", () => {
+  it("uses the same Markdown image and code pipeline for static pages and posts", async () => {
+    const body = "![diagram](/diagram.svg#detail)\n\n```js\nconst n = 1;\n```";
+    const { root } = contentFixture({ first: body });
+    fs.mkdirSync(path.join(root, "public"));
+    fs.writeFileSync(
+      path.join(root, "public/diagram.svg"),
+      '<svg xmlns="http://www.w3.org/2000/svg"><path id="detail"/></svg>'
+    );
+    fs.writeFileSync(
+      path.join(root, "src/content/pages/about.md"),
+      `---\ntitle: About\n---\n${body}`
+    );
+    const content = await buildContent(root);
+    expect(content.pages.about.html).toBe(content.posts[0].html);
+    expect(content.pages.about.html).toContain('loading="lazy"');
+    expect(content.pages.about.html).toContain("code-copy-button");
+    expect(content.assets.size).toBe(1);
+    expect(
+      content.dependencies.has(path.join(root, "public/diagram.svg"))
+    ).toBe(true);
+  });
+
   it("shares oriented compact WebP assets between article chunks and RSS without changing originals", async () => {
     const { root, postsDir } = contentFixture({
       first: "![Photo](./photo.JPG)",
@@ -396,11 +555,15 @@ describe("build-only image optimization", () => {
     expect(image.data.length).toBeLessThan(original.length / 2);
     expect((await sharp(image.data).metadata()).format).toBe("webp");
     const content = await buildContent(root);
-    const { post, rssHtml } = content.posts[0];
+    const post = content.posts[0];
+    const feedHtml = rssHtml(
+      post.html,
+      `https://blog.flurry.top/posts/${post.slug}`
+    );
     expect([...content.assets.keys()]).toEqual([image.fileName]);
     expect(content.assets.get(image.fileName)?.data).toEqual(image.data);
     expect(post.html).toContain(`src="/${image.fileName}"`);
-    expect(rssHtml).toContain(
+    expect(feedHtml).toContain(
       `src="https://blog.flurry.top/${image.fileName}"`
     );
     expect(fs.readFileSync(source)).toEqual(original);
@@ -428,10 +591,14 @@ describe("build-only image optimization", () => {
     )!;
     expect(vector.data.toString()).toBe(svg);
     expect(animation.data).toEqual(gif);
-    const { post, rssHtml } = content.posts[0];
+    const post = content.posts[0];
+    const feedHtml = rssHtml(
+      post.html,
+      `https://blog.flurry.top/posts/${post.slug}`
+    );
     expect(post.html).toContain("__POST_IMAGE_0__");
     expect(post.html).toContain(`src="/${vector.fileName}#detail"`);
-    expect(rssHtml).toContain(
+    expect(feedHtml).toContain(
       `src="https://blog.flurry.top/${vector.fileName}#detail"`
     );
     expect(post.html).toContain('src="https://example.org/photo.jpg"');

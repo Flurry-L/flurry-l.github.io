@@ -1,0 +1,34 @@
+/* W3C CLREQ and CSS Text 4: spacing belongs to layout, not copied text. */
+:root {
+  text-autospace: normal;
+  text-autospace: ideograph-alpha ideograph-numeric replace;
+  line-break: strict;
+  word-break: normal;
+  overflow-wrap: break-word;
+}
+
+:where(h1, h2, h3, h4) {
+  text-wrap: balance;
+}
+
+.prose {
+  line-height: 1.9;
+  text-spacing-trim: trim-start;
+  hanging-punctuation: allow-end;
+  font-variant-numeric: proportional-nums;
+}
+
+.prose :where(p, li, blockquote) {
+  text-wrap: pretty;
+}
+
+/* Code, formulas and verbatim fields retain their original spacing. */
+:where(pre, code, kbd, samp, textarea, input, .katex) {
+  text-autospace: no-autospace;
+  text-spacing-trim: space-all;
+  hanging-punctuation: none;
+}
+
+.prose :where(table, pre) {
+  font-variant-numeric: tabular-nums;
+}

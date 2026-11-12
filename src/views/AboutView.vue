@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { pages } from "virtual:pages";
 
+import MarkdownContent from "../components/MarkdownContent.vue";
 import { SOCIALS } from "../config";
 
 const about = pages.about;
@@ -23,7 +24,7 @@ const contacts = [
       width="96"
       height="96"
     />
-    <h1 data-pagefind-meta="title" class="text-2xl font-bold tracking-tight">
+    <h1 data-pagefind-meta="title" class="text-2xl font-bold">
       {{ about.title }}
     </h1>
     <div data-pagefind-ignore="all" class="mt-3 mb-8 flex gap-4 text-sm">
@@ -38,7 +39,6 @@ const contacts = [
         {{ contact.label }}
       </a>
     </div>
-    <!-- eslint-disable-next-line vue/no-v-html -->
-    <div class="prose max-w-none" v-html="about.html" />
+    <MarkdownContent :html="about.html" />
   </article>
 </template>

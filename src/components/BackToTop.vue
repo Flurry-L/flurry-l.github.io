@@ -1,5 +1,7 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, ref } from "vue";
+import { onMounted, ref } from "vue";
+import { IconArrowUp } from "@tabler/icons-vue";
+import { useEventListener } from "@vueuse/core";
 
 const visible = ref(false);
 
@@ -14,16 +16,9 @@ function scrollToTop() {
   window.scrollTo({ top: 0, behavior: reducedMotion ? "instant" : "smooth" });
 }
 
-onMounted(() => {
-  updateVisibility();
-  window.addEventListener("scroll", updateVisibility, { passive: true });
-  window.addEventListener("resize", updateVisibility);
-});
-
-onBeforeUnmount(() => {
-  window.removeEventListener("scroll", updateVisibility);
-  window.removeEventListener("resize", updateVisibility);
-});
+onMounted(updateVisibility);
+useEventListener("scroll", updateVisibility, { passive: true });
+useEventListener("resize", updateVisibility);
 </script>
 
 <template>
@@ -35,18 +30,6 @@ onBeforeUnmount(() => {
     class="border-border bg-background text-muted-foreground hover:border-accent hover:text-accent order-2 flex size-11 items-center justify-center rounded-full border shadow-sm transition-colors motion-reduce:transition-none"
     @click="scrollToTop"
   >
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      stroke-width="2"
-      stroke-linecap="round"
-      stroke-linejoin="round"
-      class="size-5"
-      aria-hidden="true"
-    >
-      <path d="m6 12 6-6 6 6M12 6v13" />
-    </svg>
+    <IconArrowUp class="size-5" aria-hidden="true" />
   </button>
 </template>

@@ -5,12 +5,19 @@ import path from "node:path";
 import { katex } from "@mdit/plugin-katex";
 import Shiki from "@shikijs/markdown-it";
 import matter from "gray-matter";
+import { slug as slugify } from "github-slugger";
 import MarkdownIt from "markdown-it";
 import anchor from "markdown-it-anchor";
+import cjkBreaks from "markdown-it-cjk-breaks";
 
 import type Token from "markdown-it/lib/token.mjs";
-import type { Post, PostMeta, TocItem } from "../../src/types/post";
-import { parseWeekendCalendar } from "../../shared/weekend-calendar";
+import siteConfig from "../../site.config.json";
+import type {
+  Post,
+  PostMeta,
+  TocItem,
+  WeekendCalendarInput,
+} from "../../src/types/post";
 
 export interface ResolvedImage {
   src: string;
@@ -18,10 +25,7 @@ export interface ResolvedImage {
   height?: number;
 }
 export interface RenderOptions {
-  resolveImage?: (
-    src: string
-  ) => string | ResolvedImage | Promise<string | ResolvedImage>;
-  rssUrl?: string;
+  resolveImage?: (src: string) => Promise<ResolvedImage>;
 }
 export interface ParsedPage {
   title: string;
@@ -29,27 +33,39 @@ export interface ParsedPage {
   html: string;
 }
 export interface PostSource {
-  md: MarkdownIt;
   data: Record<string, unknown>;
   content: string;
-  marker: string;
   meta: PostMeta;
 }
-export interface RenderedPost {
-  post: Post;
-  rssHtml: string;
-}
 interface RenderEnvironment {
-  images?: Map<string, string | ResolvedImage>;
-  codeControls?: boolean;
-  fenceHtml?: Map<Token, string>;
-  absoluteUrl?: string;
+  images?: Map<string, ResolvedImage>;
 }
 
 let markdownPromise: Promise<MarkdownIt> | undefined;
+const EXCERPT_MARKER = "<!-- excerpt -->";
 
 const codeControls =
-  '<button type="button" class="code-copy-button" aria-label="复制代码" title="复制代码" data-pagefind-ignore="all"></button><span class="sr-only" role="status" data-pagefind-ignore="all"></span>';
+  '<button type="button" class="code-copy-button" aria-label="复制代码" title="复制代码" data-code-controls data-pagefind-ignore="all"></button><span class="sr-only" role="status" data-code-controls data-pagefind-ignore="all"></span>';
+
+const dateFormatter = new Intl.DateTimeFormat("zh-CN", {
+  timeZone: siteConfig.site.timezone,
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
+export function publicationDate(iso: string) {
+  const parts = Object.fromEntries(
+    dateFormatter
+      .formatToParts(new Date(iso))
+      .map(part => [part.type, part.value])
+  );
+  return {
+    dateLabel: `${parts.year}年${Number(parts.month)}月${Number(parts.day)}日`,
+    archiveDate: `${parts.month}-${parts.day}`,
+    year: Number(parts.year),
+  };
+}
 
 export function getMarkdown() {
   markdownPromise ??= createMarkdown();
@@ -59,6 +75,7 @@ export function getMarkdown() {
 async function createMarkdown() {
   const md = new MarkdownIt({ html: true, linkify: true });
 
+  md.use(cjkBreaks);
   md.use(katex);
   md.use(anchor, { slugify: text => slugify(text) || "section" });
   md.use(
@@ -68,11 +85,8 @@ async function createMarkdown() {
     })
   );
 
-  // Let callers rewrite image srcs (e.g. relative paths) via env.resolveImage.
-  const defaultImage =
-    md.renderer.rules.image ??
-    ((tokens, idx, options, env, self) =>
-      self.renderToken(tokens, idx, options));
+  // Image assets are resolved before rendering.
+  const defaultImage = md.renderer.rules.image!;
   md.renderer.rules.image = (
     tokens,
     idx,
@@ -84,33 +98,13 @@ async function createMarkdown() {
     token.attrSet("loading", "lazy");
     token.attrSet("decoding", "async");
     const src = token.attrGet("src");
-    const image = src ? env?.images?.get(src) : undefined;
+    const image = src ? env.images?.get(src) : undefined;
     if (image) {
-      token.attrSet("src", typeof image === "string" ? image : image.src);
-      if (typeof image !== "string") {
-        if (image.width) token.attrSet("width", String(image.width));
-        if (image.height) token.attrSet("height", String(image.height));
-      }
+      token.attrSet("src", image.src);
+      if (image.width) token.attrSet("width", String(image.width));
+      if (image.height) token.attrSet("height", String(image.height));
     }
-    if (env.absoluteUrl)
-      token.attrSet(
-        "src",
-        new URL(token.attrGet("src")!, env.absoluteUrl).href
-      );
     return defaultImage(tokens, idx, options, env, self);
-  };
-
-  md.renderer.rules.link_open = (
-    tokens,
-    idx,
-    options,
-    env: RenderEnvironment,
-    self
-  ) => {
-    const href = tokens[idx].attrGet("href");
-    if (href && env.absoluteUrl)
-      tokens[idx].attrSet("href", new URL(href, env.absoluteUrl).href);
-    return self.renderToken(tokens, idx, options);
   };
 
   const defaultFence = md.renderer.rules.fence!;
@@ -124,29 +118,14 @@ async function createMarkdown() {
     const language = md.utils.escapeHtml(
       tokens[idx].info.trim().split(/\s+/)[0] || "text"
     );
-    let pre = env.fenceHtml?.get(tokens[idx]);
-    if (!pre) {
-      pre = defaultFence(tokens, idx, options, env, self).replace(
-        /<pre(?=[\s>])/,
-        `<pre data-language="${language}"`
-      );
-      env.fenceHtml?.set(tokens[idx], pre);
-    }
-    return `<div class="code-block" data-language="${language}">${pre}${env?.codeControls === false ? "" : codeControls}</div>\n`;
+    const pre = defaultFence(tokens, idx, options, env, self).replace(
+      /<pre(?=[\s>])/,
+      `<pre data-language="${language}"`
+    );
+    return `<div class="code-block" data-language="${language}">${pre}${codeControls}</div>\n`;
   };
 
   return md;
-}
-
-// github-slugger-like slugify that keeps CJK characters.
-export function slugify(text: string) {
-  return text
-    .trim()
-    .toLowerCase()
-    .replace(/<[^>]*>/g, "")
-    .replace(/[^\p{L}\p{N}\p{M}\s_-]/gu, "")
-    .replace(/[\s_]+/g, "-")
-    .replace(/^-+|-+$/g, "");
 }
 
 // Keep prose token boundaries for reading counts, but join visible inline text
@@ -204,17 +183,6 @@ function normalizeTags(tags: unknown) {
   return list.map(tag => String(tag).trim()).filter(Boolean);
 }
 
-function validateWeekendCalendar(input: unknown, slug: string) {
-  try {
-    return parseWeekendCalendar(input);
-  } catch (error) {
-    throw new TypeError(
-      `Invalid weekendCalendar in post "${slug}": ${error instanceof Error ? error.message : String(error)}`,
-      { cause: error }
-    );
-  }
-}
-
 // Count CJK characters individually and Latin words as units, excluding markup.
 export function readingStats(tokens: Token[]) {
   const text = tokens
@@ -247,9 +215,9 @@ export async function readPostSource(filePath: string): Promise<PostSource> {
   const raw = fs.readFileSync(filePath, "utf8");
   const { data, content } = matter(raw);
   const slug = path.basename(filePath, ".md");
+  const pubDatetime = toIsoDatetime(data.pubDatetime, slug);
 
-  const marker = "<!-- excerpt -->";
-  const markerIndex = content.indexOf(marker);
+  const markerIndex = content.indexOf(EXCERPT_MARKER);
   // Only the author's explicit <!-- excerpt --> truncation becomes the
   // excerpt; never fall back to an auto-generated first-paragraph summary.
   const excerptSource = markerIndex >= 0 ? content.slice(0, markerIndex) : "";
@@ -266,14 +234,13 @@ export async function readPostSource(filePath: string): Promise<PostSource> {
     .trim();
 
   return {
-    md,
     data,
     content,
-    marker,
     meta: {
       slug,
       title: String(data.title ?? slug),
-      pubDatetime: toIsoDatetime(data.pubDatetime, slug),
+      pubDatetime,
+      ...publicationDate(pubDatetime),
       description: String(data.description ?? ""),
       tags: normalizeTags(data.tags),
       excerpt,
@@ -283,12 +250,29 @@ export async function readPostSource(filePath: string): Promise<PostSource> {
 
 export async function renderPost(
   source: PostSource,
-  { resolveImage, rssUrl }: RenderOptions = {}
-): Promise<RenderedPost> {
-  const { md, data, content, marker, meta } = source;
-  const body = content.replace(marker, "");
-  const env: RenderEnvironment = { images: new Map(), fenceHtml: new Map() };
-  const tokens = md.parse(body, env);
+  options: RenderOptions = {}
+): Promise<Post> {
+  const { data, content, meta } = source;
+  const body = content.replace(EXCERPT_MARKER, "");
+  const { html, tokens } = await renderMarkdown(body, options);
+  return {
+    ...meta,
+    html,
+    ...readingStats(tokens),
+    toc: extractToc(tokens),
+    weekendCalendar:
+      (data.weekendCalendar as WeekendCalendarInput | undefined) ?? null,
+  };
+}
+
+async function renderMarkdown(
+  content: string,
+  { resolveImage }: RenderOptions
+) {
+  const md = await getMarkdown();
+  const images = new Map<string, ResolvedImage>();
+  const env: RenderEnvironment = { images };
+  const tokens = md.parse(content, env);
   if (resolveImage) {
     const sources = new Set<string>();
     const collectImages = (tokens: Token[]) => {
@@ -299,34 +283,24 @@ export async function renderPost(
     };
     collectImages(tokens);
     for (const src of sources) {
-      if (src) env.images!.set(src, await resolveImage(src));
+      if (src) images.set(src, await resolveImage(src));
     }
   }
-  const html = md.renderer.render(tokens, md.options, env);
-  const post: Post = {
-    ...meta,
-    html,
-    ...readingStats(tokens),
-    toc: extractToc(tokens),
-    weekendCalendar:
-      data.weekendCalendar != null
-        ? validateWeekendCalendar(data.weekendCalendar, meta.slug)
-        : null,
+  return {
+    html: md.renderer.render(tokens, md.options, env),
+    tokens,
   };
-  const rssHtml = md.renderer.render(tokens, md.options, {
-    ...env,
-    codeControls: false,
-    absoluteUrl: rssUrl,
-  });
-  return { post, rssHtml };
 }
 
-export async function parsePage(filePath: string): Promise<ParsedPage> {
-  const md = await getMarkdown();
+export async function parsePage(
+  filePath: string,
+  options: RenderOptions = {}
+): Promise<ParsedPage> {
   const { data, content } = matter(fs.readFileSync(filePath, "utf8"));
+  const { html } = await renderMarkdown(content, options);
   return {
     title: String(data.title ?? ""),
     description: String(data.description ?? ""),
-    html: md.render(content, {}),
+    html,
   };
 }

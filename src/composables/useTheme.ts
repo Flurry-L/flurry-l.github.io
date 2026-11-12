@@ -1,5 +1,6 @@
-import { inject, onMounted, provide, ref } from "vue";
+import { computed, inject, provide } from "vue";
 import type { InjectionKey, Ref } from "vue";
+import { useDark, useMounted, useToggle } from "@vueuse/core";
 
 interface Theme {
   isDark: Ref<boolean>;
@@ -9,19 +10,12 @@ interface Theme {
 const themeKey: InjectionKey<Theme> = Symbol("theme");
 
 export function provideTheme() {
+  const dark = useDark({ storageKey: "theme" });
+  const mounted = useMounted();
   // Keep the server and first client render identical. The inline script
   // applies the visual theme before hydration; controls catch up afterward.
-  const isDark = ref(false);
-
-  onMounted(() => {
-    isDark.value = document.documentElement.classList.contains("dark");
-  });
-
-  function toggleTheme() {
-    isDark.value = !isDark.value;
-    document.documentElement.classList.toggle("dark", isDark.value);
-    localStorage.setItem("theme", isDark.value ? "dark" : "light");
-  }
+  const isDark = computed(() => mounted.value && dark.value);
+  const toggleTheme = useToggle(dark);
 
   provide(themeKey, { isDark, toggleTheme });
 }

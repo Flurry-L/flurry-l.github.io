@@ -1,12 +1,10 @@
-import { nextTick } from "vue";
 import type { RouterOptions, RouteRecordRaw } from "vue-router";
-import { pages } from "virtual:pages-meta";
+import { pages } from "virtual:pages";
 import type { Post } from "../types/post";
 
 declare module "vue-router" {
   interface RouteMeta {
     post?: Post;
-    postLoadFailed?: boolean;
     title?: string;
     description?: string;
   }
@@ -61,23 +59,14 @@ export const routes: RouteRecordRaw[] = [
   },
 ];
 
-export const scrollBehavior: RouterOptions["scrollBehavior"] = async (
+export const scrollBehavior: RouterOptions["scrollBehavior"] = (
   to,
   _from,
   savedPosition
 ) => {
-  // A restored homepage may expand its list on mount before scrolling back.
-  await nextTick();
-  await nextTick();
   if (savedPosition) return savedPosition;
   if (to.hash) {
-    let id = to.hash.slice(1);
-    try {
-      id = decodeURIComponent(id);
-    } catch {
-      /* Use the literal fragment. */
-    }
-    const heading = document.getElementById(id);
+    const heading = document.getElementById(to.hash.slice(1));
     if (!heading) return;
     return {
       el: heading,

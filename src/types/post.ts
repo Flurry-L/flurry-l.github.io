@@ -1,4 +1,12 @@
-import type { WeekendCalendarInput } from "../../shared/weekend-calendar";
+export interface WeekendCalendarEvent {
+  date: string;
+  text: string;
+}
+
+export interface WeekendCalendarInput {
+  summary: string;
+  events: WeekendCalendarEvent[];
+}
 
 export interface TocItem {
   depth: number;
@@ -9,6 +17,9 @@ export interface PostMeta {
   slug: string;
   title: string;
   pubDatetime: string;
+  dateLabel: string;
+  archiveDate: string;
+  year: number;
   description: string;
   tags: string[];
   excerpt: string;

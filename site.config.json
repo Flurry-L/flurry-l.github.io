@@ -10,8 +10,6 @@
     "timezone": "Asia/Shanghai"
   },
   "posts": {
-    "perPage": 4,
-    "perIndex": 4,
     "scheduledPostMargin": 900000
   },
   "socials": [

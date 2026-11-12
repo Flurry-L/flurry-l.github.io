@@ -1,7 +1,6 @@
 import siteConfig from "../site.config.json";
 
 export const SITE = siteConfig.site;
-export const POSTS = siteConfig.posts;
 export const SOCIALS = siteConfig.socials;
 
 const env = import.meta.env;

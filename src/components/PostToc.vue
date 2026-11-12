@@ -3,10 +3,7 @@ import { ref, watch } from "vue";
 
 import type { TocItem } from "../lib/posts";
 
-const props = withDefaults(
-  defineProps<{ items: TocItem[]; activeId: string; showTitle?: boolean }>(),
-  { showTitle: true }
-);
+const props = defineProps<{ items: TocItem[]; activeId: string }>();
 
 const navRef = ref<HTMLElement>();
 
@@ -32,7 +29,7 @@ watch(
 
 <template>
   <nav ref="navRef" aria-label="文章目录" class="text-sm">
-    <p v-if="showTitle" class="mb-2 font-medium">目录</p>
+    <p class="mb-2 font-medium">目录</p>
     <ul class="border-border space-y-1.5 border-l">
       <li
         v-for="item in items"
