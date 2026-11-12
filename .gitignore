@@ -5,9 +5,10 @@ Thumbs.db
 # Logs
 *.log
 
-# Dependencies and Astro build output
+# Dependencies and build output
 node_modules/
 dist/
+.vite-ssg-temp/
 .astro/
 
 # Local environment variables
@@ -19,6 +20,4 @@ dist/
 draft/
 
 # Generated assets
-public/katex/
 public/og/
-public/pagefind/

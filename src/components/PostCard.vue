@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import type { Post } from "../lib/posts";
+import type { PostMeta } from "../lib/posts";
 
 import FormattedDate from "./FormattedDate.vue";
 import TagPill from "./TagPill.vue";
 
-defineProps<{ post: Post }>();
+defineProps<{ post: PostMeta }>();
 </script>
 
 <template>

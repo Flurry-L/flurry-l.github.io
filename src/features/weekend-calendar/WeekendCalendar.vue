@@ -40,7 +40,7 @@ const agendaElements = new Map<string, HTMLElement>();
 const agendaItemElements = new Map<string, HTMLElement>();
 const queuedFrames = new Set<number>();
 let resizeObserver: ResizeObserver | undefined;
-let highlightTimer: ReturnType<typeof window.setTimeout> | undefined;
+let highlightTimer: number | undefined;
 let mounted = false;
 
 function tabId(monthKey: string) {
@@ -238,6 +238,12 @@ onBeforeUnmount(() => {
     data-floating-controls-clear
   >
     <div v-if="model.months.length > 0" class="calendar-frame">
+      <header class="calendar-intro">
+        <p>{{ summary }}</p>
+        <p class="calendar-meta">
+          {{ model.rangeLabel }} · 共 {{ model.totalEvents }} 项
+        </p>
+      </header>
       <div
         class="calendar-tabs"
         role="tablist"

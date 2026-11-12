@@ -1,35 +1,52 @@
-import { onBeforeUnmount, onMounted, type Ref } from "vue";
+import { watch, type Ref } from "vue";
 
-/** Appends a copy button to every <pre> inside the given container. */
+/** One delegated listener also handles code blocks replaced by v-html. */
 export function useCodeCopy(container: Ref<HTMLElement | undefined>) {
-  const buttons: HTMLButtonElement[] = [];
-
-  onMounted(() => {
-    const blocks = container.value?.querySelectorAll("pre") ?? [];
-    for (const block of blocks) {
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = "code-copy-button";
-      button.textContent = "复制";
-      button.setAttribute("aria-label", "复制代码");
-      button.addEventListener("click", async () => {
-        const code = block.querySelector("code")?.innerText ?? block.innerText;
+  watch(
+    container,
+    (element, _previous, onCleanup) => {
+      if (!element) return;
+      let timer: number | undefined;
+      let lastButton: HTMLButtonElement | undefined;
+      const reset = () => {
+        clearTimeout(timer);
+        if (!lastButton) return;
+        delete lastButton.dataset.state;
+        delete lastButton.dataset.message;
+        lastButton
+          .closest(".code-block")!
+          .querySelector('[role="status"]')!.textContent = "";
+      };
+      const copy = async (event: MouseEvent) => {
+        const button = (event.target as Element).closest<HTMLButtonElement>(
+          "button.code-copy-button"
+        );
+        if (!button) return;
+        const block = button.closest(".code-block")!;
+        let message = "已复制";
+        let state = "copied";
         try {
-          await navigator.clipboard.writeText(code);
-          button.textContent = "已复制";
+          await navigator.clipboard.writeText(
+            block.querySelector("pre code")!.textContent ?? ""
+          );
         } catch {
-          button.textContent = "复制失败";
+          message = "复制失败";
+          state = "error";
         }
-        setTimeout(() => {
-          button.textContent = "复制";
-        }, 1500);
+        if (!button.isConnected) return;
+        reset();
+        lastButton = button;
+        button.dataset.state = state;
+        button.dataset.message = message;
+        block.querySelector('[role="status"]')!.textContent = message;
+        timer = window.setTimeout(reset, 1500);
+      };
+      element.addEventListener("click", copy);
+      onCleanup(() => {
+        clearTimeout(timer);
+        element.removeEventListener("click", copy);
       });
-      block.appendChild(button);
-      buttons.push(button);
-    }
-  });
-
-  onBeforeUnmount(() => {
-    for (const button of buttons) button.remove();
-  });
+    },
+    { flush: "post" }
+  );
 }

@@ -3,7 +3,6 @@ import siteConfig from "../site.config.json";
 export const SITE = siteConfig.site;
 export const POSTS = siteConfig.posts;
 export const SOCIALS = siteConfig.socials;
-export const SHARE_LINKS = siteConfig.shareLinks;
 
 const env = import.meta.env;
 

@@ -8,8 +8,14 @@ import { katex } from "@mdit/plugin-katex";
 import Shiki from "@shikijs/markdown-it";
 import matter from "gray-matter";
 import MarkdownIt from "markdown-it";
+import anchor from "markdown-it-anchor";
+
+import { parseWeekendCalendar } from "../../shared/weekend-calendar.mjs";
 
 let markdownPromise;
+
+const codeControls =
+  '<button type="button" class="code-copy-button" aria-label="复制代码" title="复制代码" data-pagefind-ignore="all"><svg class="copy-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg><svg class="copied-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg></button><span class="sr-only" role="status" data-pagefind-ignore="all"></span>';
 
 export function getMarkdown() {
   markdownPromise ??= createMarkdown();
@@ -20,7 +26,7 @@ async function createMarkdown() {
   const md = new MarkdownIt({ html: true, linkify: true });
 
   md.use(katex);
-  md.use(headingAnchorPlugin);
+  md.use(anchor, { slugify: text => slugify(text) || "section" });
   md.use(
     await Shiki({
       themes: { light: "vitesse-light", dark: "vitesse-dark" },
@@ -35,11 +41,30 @@ async function createMarkdown() {
       self.renderToken(tokens, idx, options));
   md.renderer.rules.image = (tokens, idx, options, env, self) => {
     const token = tokens[idx];
+    token.attrSet("loading", "lazy");
+    token.attrSet("decoding", "async");
     const src = token.attrGet("src");
-    if (src && typeof env?.resolveImage === "function") {
-      token.attrSet("src", env.resolveImage(src));
+    if (src && env?.images?.has(src)) {
+      const image = env.images.get(src);
+      token.attrSet("src", typeof image === "string" ? image : image.src);
+      if (typeof image !== "string") {
+        if (image.width) token.attrSet("width", String(image.width));
+        if (image.height) token.attrSet("height", String(image.height));
+      }
     }
     return defaultImage(tokens, idx, options, env, self);
+  };
+
+  const defaultFence = md.renderer.rules.fence;
+  md.renderer.rules.fence = (tokens, idx, options, env, self) => {
+    const language = md.utils.escapeHtml(
+      tokens[idx].info.trim().split(/\s+/)[0] || "text"
+    );
+    const pre = defaultFence(tokens, idx, options, env, self).replace(
+      /<pre(?=[\s>])/,
+      `<pre data-language="${language}"`
+    );
+    return `<div class="code-block" data-language="${language}">${pre}${env?.codeControls === false ? "" : codeControls}</div>\n`;
   };
 
   return md;
@@ -56,45 +81,39 @@ export function slugify(text) {
     .replace(/^-+|-+$/g, "");
 }
 
-function headingAnchorPlugin(md) {
-  md.core.ruler.push("heading_anchor", state => {
-    const seen = new Map();
-    for (let i = 0; i < state.tokens.length - 1; i += 1) {
-      const token = state.tokens[i];
-      if (token.type !== "heading_open") continue;
-      const inline = state.tokens[i + 1];
-      if (inline?.type !== "inline") continue;
-      const base = slugify(inline.content);
-      if (!base) continue;
-      const count = seen.get(base) ?? 0;
-      seen.set(base, count + 1);
-      token.attrSet("id", count === 0 ? base : `${base}-${count}`);
+// Keep prose token boundaries for reading counts, but join visible inline text
+// naturally for headings and excerpts. Only excerpts include image alt/math.
+function inlineText(tokens, separator = "", excerpt = false) {
+  const parts = [];
+  for (const token of tokens) {
+    if (
+      token.type === "text" ||
+      token.type === "code_inline" ||
+      (excerpt && token.type === "math_inline")
+    ) {
+      parts.push(token.content);
+    } else if (token.type === "softbreak" || token.type === "hardbreak") {
+      parts.push(" ");
+    } else if (excerpt && token.type === "image") {
+      parts.push(inlineText(token.children ?? [], "", true));
     }
-  });
+  }
+  return parts.join(separator);
 }
 
-export function stripTags(html) {
-  return html.replace(/<[^>]*>/g, "");
-}
-
-export function decodeEntities(text) {
-  return text
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'");
-}
-
-export function extractToc(html) {
+/** Read the final heading IDs from Markdown tokens, not rendered HTML. */
+export function extractToc(tokens) {
   const toc = [];
-  const pattern = /<h([23]) id="([^"]+)">([\s\S]*?)<\/h\1>/g;
-  let match;
-  while ((match = pattern.exec(html)) !== null) {
+  for (let index = 0; index < tokens.length; index += 1) {
+    const token = tokens[index];
+    if (token.type !== "heading_open" || !["h2", "h3"].includes(token.tag))
+      continue;
+    const inline = tokens[index + 1];
+    const text = inlineText(inline?.children ?? []).trim();
     toc.push({
-      depth: Number(match[1]),
-      id: match[2],
-      text: decodeEntities(stripTags(match[3])).trim(),
+      depth: Number(token.tag.slice(1)),
+      id: token.attrGet("id"),
+      text,
     });
   }
   return toc;
@@ -114,44 +133,45 @@ function normalizeTags(tags) {
   return list.map(tag => String(tag).trim()).filter(Boolean);
 }
 
-const CALENDAR_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
-
-function isValidCalendarDate(value) {
-  if (!CALENDAR_DATE_PATTERN.test(value)) return false;
-  const [year, month, day] = value.split("-").map(Number);
-  const date = new Date(Date.UTC(year, month - 1, day));
-  return (
-    date.getUTCFullYear() === year &&
-    date.getUTCMonth() === month - 1 &&
-    date.getUTCDate() === day
-  );
-}
-
-// Mirrors src/features/weekend-calendar/schema.ts (kept dependency-free so
-// both the Vite plugin and plain Node scripts can use it).
 function validateWeekendCalendar(input, slug) {
-  const fail = reason => {
-    throw new Error(`Invalid weekendCalendar in post "${slug}": ${reason}`);
-  };
-  if (typeof input?.summary !== "string" || input.summary.trim() === "") {
-    fail("summary must be a non-empty string");
+  try {
+    return parseWeekendCalendar(input);
+  } catch (error) {
+    throw new TypeError(
+      `Invalid weekendCalendar in post "${slug}": ${error.message}`,
+      { cause: error }
+    );
   }
-  if (!Array.isArray(input.events) || input.events.length === 0) {
-    fail("events must be a non-empty array");
-  }
-  const events = input.events.map((event, index) => {
-    if (typeof event?.date !== "string" || !isValidCalendarDate(event.date)) {
-      fail(`events[${index}].date must be a valid YYYY-MM-DD date`);
-    }
-    if (typeof event?.text !== "string" || event.text.trim() === "") {
-      fail(`events[${index}].text must be a non-empty string`);
-    }
-    return { date: event.date, text: event.text.trim() };
-  });
-  return { summary: input.summary.trim(), events };
 }
 
-export async function parsePost(filePath, { resolveImage } = {}) {
+// Count CJK characters individually and Latin words as units, excluding markup.
+export function readingStats(tokens) {
+  const text = tokens
+    .map(token =>
+      token.type === "inline" ? inlineText(token.children ?? [], " ") : ""
+    )
+    .join(" ");
+  const cjk =
+    text.match(
+      /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/gu
+    ) ?? [];
+  const words =
+    text
+      .replace(
+        /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Hangul}]/gu,
+        " "
+      )
+      .match(/[\p{L}\p{N}]+(?:['’-][\p{L}\p{N}]+)*/gu) ?? [];
+  return {
+    wordCount: cjk.length + words.length,
+    readingMinutes: Math.max(
+      1,
+      Math.ceil(cjk.length / 400 + words.length / 200)
+    ),
+  };
+}
+
+async function readPostSource(filePath) {
   const md = await getMarkdown();
   const raw = fs.readFileSync(filePath, "utf8");
   const { data, content } = matter(raw);
@@ -162,25 +182,69 @@ export async function parsePost(filePath, { resolveImage } = {}) {
   // Only the author's explicit <!-- excerpt --> truncation becomes the
   // excerpt; never fall back to an auto-generated first-paragraph summary.
   const excerptSource = markerIndex >= 0 ? content.slice(0, markerIndex) : "";
-  const excerpt = decodeEntities(stripTags(md.render(excerptSource, {})))
+  const excerpt = (excerptSource ? md.parse(excerptSource, {}) : [])
+    .map(token => {
+      if (token.type === "inline")
+        return inlineText(token.children ?? [], "", true);
+      if (["fence", "code_block", "math_block"].includes(token.type))
+        return token.content;
+      return "";
+    })
+    .join(" ")
     .replace(/\s+/g, " ")
     .trim();
 
-  const body = markerIndex >= 0 ? content.replace(marker, "") : content;
-  const html = md.render(body, { resolveImage });
-
   return {
-    slug,
-    title: String(data.title ?? slug),
-    pubDatetime: toIsoDatetime(data.pubDatetime, slug),
-    description: String(data.description ?? ""),
-    tags: normalizeTags(data.tags),
-    excerpt,
+    md,
+    data,
+    content,
+    marker,
+    meta: {
+      slug,
+      title: String(data.title ?? slug),
+      pubDatetime: toIsoDatetime(data.pubDatetime, slug),
+      description: String(data.description ?? ""),
+      tags: normalizeTags(data.tags),
+      excerpt,
+    },
+  };
+}
+
+export async function parsePostMeta(filePath) {
+  return (await readPostSource(filePath)).meta;
+}
+
+export async function parsePost(
+  filePath,
+  { resolveImage, codeControls = true } = {}
+) {
+  const { md, data, content, marker, meta } = await readPostSource(filePath);
+  const body = content.replace(marker, "");
+  const env = { images: new Map(), codeControls };
+  const tokens = md.parse(body, env);
+  if (resolveImage) {
+    const sources = new Set();
+    const collectImages = tokens => {
+      for (const token of tokens) {
+        if (token.type === "image") sources.add(token.attrGet("src"));
+        if (token.children) collectImages(token.children);
+      }
+    };
+    collectImages(tokens);
+    for (const src of sources) {
+      if (src) env.images.set(src, await resolveImage(src));
+    }
+  }
+  const html = md.renderer.render(tokens, md.options, env);
+  return {
+    ...meta,
     html,
-    toc: extractToc(html),
-    weekendCalendar: data.weekendCalendar
-      ? validateWeekendCalendar(data.weekendCalendar, slug)
-      : null,
+    ...readingStats(tokens),
+    toc: extractToc(tokens),
+    weekendCalendar:
+      data.weekendCalendar != null
+        ? validateWeekendCalendar(data.weekendCalendar, meta.slug)
+        : null,
   };
 }
 

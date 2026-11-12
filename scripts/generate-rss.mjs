@@ -1,18 +1,14 @@
 // Generates dist/rss.xml and dist/sitemap.xml after `vite build`.
-// Renders posts with the same markdown pipeline as the site itself.
+// Shares the site's markdown pipeline, omitting interactive copy controls.
 import fs from "node:fs";
 import path from "node:path";
 
 import siteConfig from "../site.config.json" with { type: "json" };
 import { parsePost } from "../vite/plugins/markdown.mjs";
 
-const { site, posts: postsConfig, editPost } = siteConfig;
+import { publishImage } from "../vite/plugins/images.mjs";
 
-// Relative images cannot resolve inside RSS readers; point them at the raw
-// files in the GitHub repository instead.
-const rawContentBase = editPost.url
-  .replace("github.com", "raw.githubusercontent.com")
-  .replace("/edit/", "/");
+const { site, posts: postsConfig } = siteConfig;
 
 function escapeXml(value) {
   return String(value)
@@ -42,12 +38,15 @@ async function loadPosts() {
   const posts = [];
   for (const file of files) {
     const post = await parsePost(path.join(postsDir, file), {
+      codeControls: false,
       resolveImage: src =>
-        src.startsWith("./") || src.startsWith("../")
-          ? rawContentBase +
-            `src/content/posts/${path.basename(file, ".md")}/` +
-            src.replace(/^\.\//, "")
-          : src,
+        publishImage(
+          src,
+          path.join(postsDir, file),
+          process.cwd(),
+          "dist",
+          site.url
+        ),
     });
     if (
       new Date(post.pubDatetime).getTime() <=

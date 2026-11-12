@@ -4,6 +4,7 @@ import { onMounted, ref, watch } from "vue";
 import { GISCUS, GISCUS_ENABLED } from "../config";
 import { useTheme } from "../composables/useTheme";
 
+const props = defineProps<{ term: string }>();
 const enabled = GISCUS_ENABLED;
 const container = ref<HTMLElement>();
 const { isDark } = useTheme();
@@ -23,18 +24,22 @@ onMounted(() => {
   script.dataset.repoId = GISCUS.repoId;
   script.dataset.category = GISCUS.category;
   script.dataset.categoryId = GISCUS.categoryId;
-  script.dataset.mapping = "pathname";
+  // Keep the original pathname-derived discussion term across SSG slash redirects.
+  script.dataset.mapping = "specific";
+  script.dataset.term = props.term;
   script.dataset.strict = "0";
   script.dataset.reactionsEnabled = "1";
   script.dataset.emitMetadata = "0";
   script.dataset.inputPosition = "top";
-  script.dataset.theme = giscusTheme();
+  script.dataset.theme = document.documentElement.classList.contains("dark")
+    ? "dark"
+    : "light";
   script.dataset.lang = "zh-CN";
   container.value.appendChild(script);
 });
 
 watch(isDark, () => {
-  const iframe = document.querySelector<HTMLIFrameElement>(
+  const iframe = container.value?.querySelector<HTMLIFrameElement>(
     "iframe.giscus-frame"
   );
   iframe?.contentWindow?.postMessage(

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
+import { onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useRoute } from "vue-router";
 
 import { SITE, SOCIALS } from "../config";
@@ -22,6 +22,7 @@ const route = useRoute();
 const { isDark, toggleTheme } = useTheme();
 const menuOpen = ref(false);
 const searchOpen = ref(false);
+const searchShortcut = ref("Ctrl K");
 const githubUrl = SOCIALS.find(social => social.name === "github")?.url ?? "#";
 
 function isActive(item: NavItem): boolean {
@@ -33,7 +34,51 @@ function closeMenu() {
   menuOpen.value = false;
 }
 
-watch(() => route.fullPath, closeMenu);
+function openSearch(event?: MouseEvent) {
+  if (event?.currentTarget instanceof HTMLElement) {
+    event.currentTarget.focus({ preventScroll: true });
+  }
+  closeMenu();
+  searchOpen.value = true;
+}
+
+function onSearchShortcut(event: KeyboardEvent) {
+  if (
+    event.defaultPrevented ||
+    event.altKey ||
+    event.shiftKey ||
+    !(event.metaKey || event.ctrlKey) ||
+    event.key.toLowerCase() !== "k"
+  )
+    return;
+
+  event.preventDefault();
+  if (
+    document.querySelector("dialog[open]") ||
+    document.body.classList.contains("medium-zoom--opened")
+  )
+    return;
+  if (!event.repeat && !searchOpen.value) openSearch();
+}
+
+watch(
+  () => route.fullPath,
+  () => {
+    closeMenu();
+    searchOpen.value = false;
+  }
+);
+
+onMounted(() => {
+  searchShortcut.value = /Mac|iPhone|iPad|iPod/.test(navigator.platform)
+    ? "⌘ K"
+    : "Ctrl K";
+  window.addEventListener("keydown", onSearchShortcut);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener("keydown", onSearchShortcut);
+});
 </script>
 
 <template>
@@ -71,9 +116,11 @@ watch(() => route.fullPath, closeMenu);
 
         <button
           type="button"
-          class="icon-wobble text-muted-foreground hover:text-accent rounded-md p-2 transition-colors"
+          class="icon-wobble text-muted-foreground hover:text-accent flex items-center gap-1.5 rounded-md p-2 transition-colors"
           aria-label="搜索"
-          @click="searchOpen = true"
+          aria-keyshortcuts="Control+k Meta+k"
+          :title="`搜索 (${searchShortcut})`"
+          @click="openSearch"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -89,6 +136,12 @@ watch(() => route.fullPath, closeMenu);
             <circle cx="11" cy="11" r="8" />
             <path d="m21 21-4.3-4.3" />
           </svg>
+          <kbd
+            class="border-border hidden rounded border px-1 text-[10px] sm:inline-block"
+            aria-hidden="true"
+          >
+            {{ searchShortcut }}
+          </kbd>
         </button>
 
         <a

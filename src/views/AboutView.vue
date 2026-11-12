@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { watchEffect } from "vue";
+import { useHead } from "@unhead/vue";
 import { pages } from "virtual:pages";
 
 import { SITE, SOCIALS } from "../config";
@@ -14,32 +14,41 @@ const contacts = [
   { label: "RSS", url: "/rss.xml" },
 ];
 
-watchEffect(() => {
-  document.title = `${about.title} | ${SITE.title}`;
+useHead({
+  title: `${about.title} | ${SITE.title}`,
+  meta: [
+    { name: "description", content: about.description },
+    { property: "og:title", content: about.title },
+    { property: "og:description", content: about.description },
+  ],
 });
 </script>
 
 <template>
-  <img
-    src="/avatar.jpg"
-    alt="Flurry 的头像"
-    class="border-border mb-6 size-24 rounded-full border"
-    width="96"
-    height="96"
-  />
-  <h1 class="text-2xl font-bold tracking-tight">{{ about.title }}</h1>
-  <div class="mt-3 mb-8 flex gap-4 text-sm">
-    <a
-      v-for="contact in contacts"
-      :key="contact.url"
-      :href="contact.url"
-      target="_blank"
-      rel="noopener noreferrer"
-      class="text-accent hover:underline"
-    >
-      {{ contact.label }}
-    </a>
-  </div>
-  <!-- eslint-disable-next-line vue/no-v-html -->
-  <div class="prose max-w-none" v-html="about.html" />
+  <article data-pagefind-body>
+    <img
+      src="/avatar.jpg"
+      alt="Flurry 的头像"
+      class="border-border mb-6 size-24 rounded-full border"
+      width="96"
+      height="96"
+    />
+    <h1 data-pagefind-meta="title" class="text-2xl font-bold tracking-tight">
+      {{ about.title }}
+    </h1>
+    <div data-pagefind-ignore="all" class="mt-3 mb-8 flex gap-4 text-sm">
+      <a
+        v-for="contact in contacts"
+        :key="contact.url"
+        :href="contact.url"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="text-accent hover:underline"
+      >
+        {{ contact.label }}
+      </a>
+    </div>
+    <!-- eslint-disable-next-line vue/no-v-html -->
+    <div class="prose max-w-none" v-html="about.html" />
+  </article>
 </template>

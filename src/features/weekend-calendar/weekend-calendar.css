@@ -29,6 +29,19 @@
   background: var(--surface);
 }
 
+.calendar-intro {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-sans);
+  line-height: 1.75;
+}
+
+.calendar-meta {
+  margin-top: 0.25rem;
+  color: var(--text-faint);
+  font-size: var(--type-caption);
+}
+
 .calendar-tabs {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));

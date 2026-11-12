@@ -7,17 +7,19 @@
   },
   "scripts": {
     "dev": "vite",
-    "prebuild": "node scripts/copy-katex.mjs",
-    "build": "vite build && node scripts/copy-404.mjs && node scripts/generate-rss.mjs && node scripts/build-search-index.mjs && cp -r dist/pagefind public/",
+    "build": "vite-ssg build && node scripts/copy-404.mjs && node scripts/generate-rss.mjs && node scripts/build-search-index.mjs",
     "preview": "vite preview",
     "format:check": "prettier --check .",
     "format": "prettier --write .",
     "lint": "eslint .",
+    "typecheck": "vue-tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "validate": "npm run lint && npm test && npm run build"
+    "validate": "npm run lint && npm run typecheck && npm test && npm run build"
   },
   "dependencies": {
+    "@unhead/vue": "^2.1.17",
+    "medium-zoom": "^1.1.2",
     "vue": "^3.5.0",
     "vue-router": "^4.5.0"
   },
@@ -28,6 +30,7 @@
     "@tailwindcss/typography": "^0.5.20",
     "@tailwindcss/vite": "^4.3.3",
     "@types/markdown-it": "^14.1.2",
+    "@types/node": "^26.6.6",
     "@vitejs/plugin-vue": "^6.0.8",
     "eslint": "^10.8.0",
     "eslint-plugin-vue": "^10.10.0",
@@ -35,14 +38,19 @@
     "gray-matter": "^4.0.3",
     "katex": "^0.18.1",
     "markdown-it": "^14.3.0",
+    "markdown-it-anchor": "^10.1.0",
     "pagefind": "^1.5.2",
     "prettier": "^3.9.6",
     "prettier-plugin-tailwindcss": "^0.8.1",
+    "sharp": "^0.35.5",
     "shiki": "^4.3.1",
+    "sirv": "^3.0.2",
     "tailwindcss": "^4.3.3",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.65.0",
     "vite": "^7.3.6",
-    "vitest": "^4.1.10"
+    "vite-ssg": "^28.3.0",
+    "vitest": "^4.1.10",
+    "vue-tsc": "^3.3.14"
   }
 }

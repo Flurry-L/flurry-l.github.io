@@ -1,29 +1,19 @@
-export interface TocItemData {
-  depth: number;
-  id: string;
-  text: string;
+import type MarkdownIt from "markdown-it";
+import type Token from "markdown-it/lib/token.mjs";
+import type { Post, PostMeta, TocItem } from "../../src/types/post";
+
+export interface ResolvedImage {
+  src: string;
+  width?: number;
+  height?: number;
 }
 
-export interface WeekendCalendarEventData {
-  date: string;
-  text: string;
-}
-
-export interface WeekendCalendarData {
-  summary: string;
-  events: WeekendCalendarEventData[];
-}
-
-export interface ParsedPost {
-  slug: string;
-  title: string;
-  pubDatetime: string;
-  description: string;
-  tags: string[];
-  excerpt: string;
-  html: string;
-  toc: TocItemData[];
-  weekendCalendar: WeekendCalendarData | null;
+export interface RenderOptions {
+  /** Include static copy controls; disable for non-interactive RSS content. */
+  codeControls?: boolean;
+  resolveImage?: (
+    src: string
+  ) => string | ResolvedImage | Promise<string | ResolvedImage>;
 }
 
 export interface ParsedPage {
@@ -32,13 +22,16 @@ export interface ParsedPage {
   html: string;
 }
 
-export function getMarkdown(): Promise<unknown>;
+export function getMarkdown(): Promise<MarkdownIt>;
 export function slugify(text: string): string;
-export function stripTags(html: string): string;
-export function decodeEntities(text: string): string;
-export function extractToc(html: string): TocItemData[];
+export function extractToc(tokens: Token[]): TocItem[];
+export function readingStats(tokens: Token[]): {
+  wordCount: number;
+  readingMinutes: number;
+};
+export function parsePostMeta(filePath: string): Promise<PostMeta>;
 export function parsePost(
   filePath: string,
-  options?: { resolveImage?: (src: string) => string }
-): Promise<ParsedPost>;
+  options?: RenderOptions
+): Promise<Post>;
 export function parsePage(filePath: string): Promise<ParsedPage>;

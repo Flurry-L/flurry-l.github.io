@@ -1,24 +1,27 @@
-import type { RawPost, TocItem } from "virtual:posts";
+import type { PostMeta } from "../types/post";
 
-export type Post = RawPost;
-export type { TocItem };
+export type { PostMeta } from "../types/post";
 
 /** A post is "scheduled" when its publication time is further than
  * `margin` milliseconds in the future. */
-export function isScheduled(post: Post, now: number, margin: number): boolean {
+export function isScheduled(
+  post: PostMeta,
+  now: number,
+  margin: number
+): boolean {
   return new Date(post.pubDatetime).getTime() > now + margin;
 }
 
 export function filterPublished(
-  posts: Post[],
+  posts: PostMeta[],
   now: number,
   margin: number
-): Post[] {
+): PostMeta[] {
   return posts.filter(post => !isScheduled(post, now, margin));
 }
 
 /** Sort by publication time, newest first. */
-export function sortPosts(posts: Post[]): Post[] {
+export function sortPosts(posts: PostMeta[]): PostMeta[] {
   return [...posts].sort(
     (a, b) =>
       new Date(b.pubDatetime).getTime() - new Date(a.pubDatetime).getTime()
@@ -30,7 +33,7 @@ export interface TagCount {
   count: number;
 }
 
-export function collectTags(posts: Post[]): TagCount[] {
+export function collectTags(posts: PostMeta[]): TagCount[] {
   const counts = new Map<string, number>();
   for (const post of posts) {
     for (const tag of post.tags) {
@@ -42,6 +45,6 @@ export function collectTags(posts: Post[]): TagCount[] {
     .sort((a, b) => a.tag.localeCompare(b.tag, "zh-CN"));
 }
 
-export function filterByTag(posts: Post[], tag: string): Post[] {
+export function filterByTag(posts: PostMeta[], tag: string): PostMeta[] {
   return posts.filter(post => post.tags.includes(tag));
 }

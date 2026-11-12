@@ -1,5 +1,7 @@
-<script setup lang="ts">
-import { nextTick, onBeforeUnmount, onMounted, ref } from "vue";
+<script lang="ts">
+interface PagefindInstance {
+  destroy?: () => void;
+}
 
 declare global {
   interface Window {
@@ -7,91 +9,176 @@ declare global {
       element: string;
       showSubResults?: boolean;
       showImages?: boolean;
-    }) => unknown;
+    }) => PagefindInstance;
   }
 }
 
-const emit = defineEmits<{ close: [] }>();
+let pagefindScriptPromise: Promise<void> | undefined;
 
-const status = ref<"loading" | "ready" | "missing">("loading");
-const panelRef = ref<HTMLElement>();
+function loadPagefind(): Promise<void> {
+  if (window.PagefindUI) return Promise.resolve();
+  if (pagefindScriptPromise) return pagefindScriptPromise;
 
-function loadScript(src: string): Promise<void> {
-  return new Promise((resolve, reject) => {
+  pagefindScriptPromise = new Promise<void>((resolve, reject) => {
     const script = document.createElement("script");
-    script.src = src;
-    script.onload = () => resolve();
-    script.onerror = () => reject(new Error(`Failed to load ${src}`));
+    script.src = "/pagefind/pagefind-ui.js";
+    script.onload = () => {
+      script.onload = null;
+      script.onerror = null;
+      if (window.PagefindUI) {
+        resolve();
+      } else {
+        script.remove();
+        reject(new Error("PagefindUI unavailable"));
+      }
+    };
+    script.onerror = () => {
+      script.onload = null;
+      script.onerror = null;
+      script.remove();
+      reject(new Error("Failed to load Pagefind"));
+    };
     document.head.appendChild(script);
+  }).catch(error => {
+    pagefindScriptPromise = undefined;
+    throw error;
   });
-}
 
-function onKeydown(event: KeyboardEvent) {
-  if (event.key === "Escape") emit("close");
+  return pagefindScriptPromise;
+}
+</script>
+
+<script setup lang="ts">
+import { nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { useRoute, useRouter } from "vue-router";
+
+const emit = defineEmits<{ close: [] }>();
+const router = useRouter();
+const route = useRoute();
+const status = ref<"loading" | "ready" | "missing">("loading");
+const dialogRef = ref<HTMLDialogElement>();
+let mounted = false;
+let instance: PagefindInstance | undefined;
+let previousOverflow = "";
+
+function close() {
+  dialogRef.value?.close();
 }
 
 function onBackdropClick(event: MouseEvent) {
-  if (event.target === event.currentTarget) emit("close");
+  if (event.target !== dialogRef.value) return;
+  const bounds = dialogRef.value.getBoundingClientRect();
+  if (
+    event.clientX < bounds.left ||
+    event.clientX > bounds.right ||
+    event.clientY < bounds.top ||
+    event.clientY > bounds.bottom
+  )
+    close();
 }
 
-onMounted(async () => {
-  document.body.style.overflow = "hidden";
-  window.addEventListener("keydown", onKeydown);
+function onResultClick(event: MouseEvent) {
+  if (
+    event.button !== 0 ||
+    event.metaKey ||
+    event.ctrlKey ||
+    event.shiftKey ||
+    event.altKey
+  )
+    return;
+  const link = (event.target as Element).closest<HTMLAnchorElement>("a[href]");
+  if (!link) return;
+  const url = new URL(link.href);
+  event.preventDefault();
+  void router.push(`${url.pathname}${url.search}${url.hash}`);
+  close();
+}
 
+watch(() => route.fullPath, close);
+
+onMounted(async () => {
+  mounted = true;
+  previousOverflow = document.body.style.overflow;
+  document.body.style.overflow = "hidden";
+  dialogRef.value?.showModal();
   if (!document.querySelector('link[href="/pagefind/pagefind-ui.css"]')) {
     const stylesheet = document.createElement("link");
     stylesheet.rel = "stylesheet";
     stylesheet.href = "/pagefind/pagefind-ui.css";
     document.head.appendChild(stylesheet);
   }
-
   try {
-    if (!window.PagefindUI) {
-      await loadScript("/pagefind/pagefind-ui.js");
-    }
+    await loadPagefind();
+    if (!mounted) return;
     if (!window.PagefindUI) throw new Error("PagefindUI unavailable");
-    new window.PagefindUI({
+    instance = new window.PagefindUI({
       element: "#pagefind-search",
       showSubResults: true,
       showImages: false,
     });
     status.value = "ready";
     await nextTick();
-    panelRef.value?.querySelector<HTMLInputElement>("input")?.focus();
+    if (mounted && dialogRef.value?.open)
+      dialogRef.value.querySelector<HTMLInputElement>("input")?.focus();
   } catch {
-    status.value = "missing";
+    if (mounted) status.value = "missing";
   }
 });
 
 onBeforeUnmount(() => {
-  document.body.style.overflow = "";
-  window.removeEventListener("keydown", onKeydown);
+  mounted = false;
+  close();
+  document.body.style.overflow = previousOverflow;
+  instance?.destroy?.();
 });
 </script>
 
 <template>
   <Teleport to="body">
-    <div
-      class="fixed inset-0 z-50 flex items-start justify-center bg-black/50 px-4 pt-24 backdrop-blur-sm"
+    <dialog
+      ref="dialogRef"
+      aria-labelledby="search-dialog-title"
+      class="bg-background border-border text-foreground fixed top-24 mx-auto my-0 max-h-[70vh] w-[calc(100%-2rem)] max-w-xl overflow-y-auto rounded-lg border p-5 shadow-xl backdrop:bg-black/50 backdrop:backdrop-blur-sm"
+      @close="emit('close')"
       @click="onBackdropClick"
     >
-      <div
-        ref="panelRef"
-        role="dialog"
-        aria-modal="true"
-        aria-label="搜索"
-        class="bg-background border-border max-h-[70vh] w-full max-w-xl overflow-y-auto rounded-lg border p-5 shadow-xl"
-      >
-        <div v-show="status !== 'missing'" id="pagefind-search" />
-        <div v-if="status === 'missing'" class="text-muted-foreground text-sm">
-          <p>搜索索引还没有生成。</p>
-          <p class="mt-2">
-            请先运行
-            <code class="bg-muted rounded px-1.5 py-0.5">npm run build</code>
-            生成 Pagefind 索引。
-          </p>
-        </div>
+      <div class="mb-4 flex items-center justify-between gap-3">
+        <h2 id="search-dialog-title" class="font-semibold">搜索文章</h2>
+        <button
+          type="button"
+          autofocus
+          class="text-muted-foreground hover:text-accent rounded px-2 py-1 text-sm transition-colors"
+          aria-label="关闭搜索"
+          @click="close"
+        >
+          关闭
+          <kbd
+            class="border-border ml-1 rounded border px-1 text-xs"
+            aria-hidden="true"
+            >Esc</kbd
+          >
+        </button>
       </div>
-    </div>
+      <p
+        v-if="status === 'loading'"
+        role="status"
+        class="text-muted-foreground mb-3 text-sm"
+      >
+        正在加载搜索…
+      </p>
+      <div
+        v-show="status !== 'missing'"
+        id="pagefind-search"
+        @click="onResultClick"
+      />
+      <div v-if="status === 'missing'" class="text-muted-foreground text-sm">
+        <p>搜索索引还没有生成。</p>
+        <p class="mt-2">
+          请先运行
+          <code class="bg-muted rounded px-1.5 py-0.5">npm run build</code> 生成
+          Pagefind 索引。
+        </p>
+      </div>
+    </dialog>
   </Teleport>
 </template>

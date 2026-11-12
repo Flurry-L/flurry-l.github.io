@@ -1,26 +1,17 @@
-declare module "virtual:posts" {
-  export interface TocItem {
-    depth: number;
-    id: string;
-    text: string;
-  }
+declare module "virtual:posts-meta" {
+  export const posts: import("./post").PostMeta[];
+}
 
-  export interface RawPost {
-    slug: string;
-    title: string;
-    pubDatetime: string;
-    description: string;
-    tags: string[];
-    excerpt: string;
-    html: string;
-    toc: TocItem[];
-    weekendCalendar: {
-      summary: string;
-      events: { date: string; text: string }[];
-    } | null;
-  }
+declare module "virtual:post-loaders" {
+  export const postLoaders: Record<
+    string,
+    () => Promise<{ default: import("./post").Post }>
+  >;
+}
 
-  export const posts: RawPost[];
+declare module "virtual:post/*" {
+  const post: import("./post").Post;
+  export default post;
 }
 
 declare module "virtual:pages" {

@@ -14,23 +14,14 @@
     "perIndex": 4,
     "scheduledPostMargin": 900000
   },
-  "editPost": {
-    "enabled": true,
-    "url": "https://github.com/Flurry-L/flurry-l.github.io/edit/main/"
-  },
   "socials": [
-    { "name": "github", "url": "https://github.com/Flurry-L" },
-    { "name": "mail", "url": "mailto:flurry.liao@gmail.com" }
-  ],
-  "shareLinks": [
-    { "name": "whatsapp", "url": "https://wa.me/?text=" },
-    { "name": "facebook", "url": "https://www.facebook.com/sharer.php?u=" },
-    { "name": "x", "url": "https://x.com/intent/post?url=" },
-    { "name": "telegram", "url": "https://t.me/share/url?url=" },
     {
-      "name": "pinterest",
-      "url": "https://pinterest.com/pin/create/button/?url="
+      "name": "github",
+      "url": "https://github.com/Flurry-L"
     },
-    { "name": "mail", "url": "mailto:?subject=See%20this%20post&body=" }
+    {
+      "name": "mail",
+      "url": "mailto:flurry.liao@gmail.com"
+    }
   ]
 }

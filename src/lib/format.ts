@@ -1,5 +1,5 @@
 import { SITE } from "../config";
-import type { Post } from "./post-utils";
+import type { PostMeta } from "../types/post";
 
 const dateFormatter = new Intl.DateTimeFormat("zh-CN", {
   timeZone: SITE.timezone,
@@ -23,12 +23,12 @@ export function getYear(iso: string): number {
 
 export interface YearGroup {
   year: number;
-  posts: Post[];
+  posts: PostMeta[];
 }
 
 /** Group posts (assumed sorted newest-first) by publication year, descending. */
-export function groupPostsByYear(posts: Post[]): YearGroup[] {
-  const groups = new Map<number, Post[]>();
+export function groupPostsByYear(posts: PostMeta[]): YearGroup[] {
+  const groups = new Map<number, PostMeta[]>();
   for (const post of posts) {
     const year = getYear(post.pubDatetime);
     const list = groups.get(year) ?? [];

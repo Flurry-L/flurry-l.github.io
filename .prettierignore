@@ -1,11 +1,10 @@
 # Build output & dependencies
 dist/
 node_modules/
+.vite-ssg-temp/
 
 # Generated assets
-public/katex/
 public/og/
-public/pagefind/
 
 # Blog content is authored by hand, never reformat it
 src/content/

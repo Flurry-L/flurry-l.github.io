@@ -1,19 +1,14 @@
 <script setup lang="ts">
-import { computed, watchEffect } from "vue";
+import { computed } from "vue";
 import { useRoute } from "vue-router";
 
-import PostCard from "../components/PostCard.vue";
-import { SITE } from "../config";
+import PostList from "../components/PostList.vue";
 import { getPostsByTag } from "../lib/posts";
 
 const route = useRoute();
 
 const tag = computed(() => String(route.params.tag));
 const posts = computed(() => getPostsByTag(tag.value));
-
-watchEffect(() => {
-  document.title = `标签：${tag.value} | ${SITE.title}`;
-});
 </script>
 
 <template>
@@ -21,7 +16,7 @@ watchEffect(() => {
     标签：<span class="text-accent">#{{ tag }}</span>
   </h1>
   <template v-if="posts.length > 0">
-    <PostCard v-for="post in posts" :key="post.slug" :post="post" />
+    <PostList :posts="posts" />
   </template>
   <div v-else class="py-16 text-center">
     <p class="text-muted-foreground">这个标签下还没有文章。</p>

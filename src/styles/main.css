@@ -79,6 +79,9 @@ body {
   --tw-prose-th-borders: var(--border);
   --tw-prose-td-borders: var(--border);
   line-height: 1.9;
+  line-break: strict;
+  overflow-wrap: break-word;
+  text-autospace: normal;
 }
 
 .prose :where(h2, h3) {
@@ -102,6 +105,23 @@ body {
 .prose img {
   margin-inline: auto;
   border-radius: 0.5rem;
+}
+
+.prose .medium-zoom-image:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+}
+
+.medium-zoom-overlay {
+  z-index: 60;
+}
+
+.medium-zoom-image--opened {
+  z-index: 61;
+}
+
+.medium-zoom--opened .floating-actions {
+  visibility: hidden;
 }
 
 /* Shiki dual themes: vitesse-light by default, vitesse-dark under .dark. */
@@ -137,36 +157,139 @@ body {
   background-color: transparent;
 }
 
-/* Copy button injected by useCodeCopy into every code block. */
-.prose pre {
+/* VitePress-style corner controls, outside the horizontally scrolling pre. */
+.prose .code-block {
   position: relative;
+  margin-block: 1.75em;
+}
+
+.prose .code-block pre {
+  margin: 0;
+  padding: 1rem;
+  text-autospace: no-autospace;
+}
+
+.code-block::before {
+  content: attr(data-language);
+  position: absolute;
+  z-index: 1;
+  top: 0.65rem;
+  right: 0.85rem;
+  padding-inline: 0.25rem;
+  background: var(--background);
+  color: var(--muted-foreground);
+  font: 0.7rem/1.4 var(--font-mono);
+  pointer-events: none;
 }
 
 .code-copy-button {
   position: absolute;
+  z-index: 2;
   top: 0.5rem;
   right: 0.5rem;
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
   cursor: pointer;
   border: 1px solid var(--border);
   border-radius: 0.375rem;
   background: var(--background);
   color: var(--muted-foreground);
-  padding: 0.15rem 0.5rem;
-  font-size: 0.75rem;
-  line-height: 1.4;
   opacity: 0;
   transition:
     opacity 0.15s,
     color 0.15s;
 }
 
-.code-copy-button:hover {
-  color: var(--accent);
+.code-copy-button:hover,
+.code-copy-button[data-state="copied"] {
+  color: var(--accent-hover);
 }
 
-.prose pre:hover .code-copy-button,
-.code-copy-button:focus-visible {
+.code-block:hover .code-copy-button,
+.code-block:focus-within .code-copy-button,
+.code-copy-button[data-state] {
   opacity: 1;
+}
+
+.code-block:hover::before,
+.code-block:focus-within::before,
+.code-block:has(.code-copy-button[data-state])::before {
+  visibility: hidden;
+}
+
+.code-copy-button .copied-icon,
+.code-copy-button[data-state="copied"] .copy-icon {
+  display: none;
+}
+
+.code-copy-button[data-state="copied"] .copied-icon {
+  display: block;
+}
+
+.code-copy-button[data-state]::before {
+  content: attr(data-message);
+  position: absolute;
+  right: calc(100% + 0.4rem);
+  border: 1px solid var(--border);
+  border-radius: 0.375rem;
+  padding: 0.3rem 0.5rem;
+  background: var(--background);
+  color: var(--foreground);
+  font: 0.75rem/1.4 var(--font-sans);
+  white-space: nowrap;
+}
+
+@media (hover: none), (pointer: coarse) {
+  .code-copy-button {
+    width: 2.25rem;
+    height: 2.25rem;
+    opacity: 0.8;
+  }
+
+  .code-block::before {
+    visibility: hidden;
+  }
+}
+
+:root {
+  --floating-right: max(1rem, env(safe-area-inset-right));
+  --floating-bottom: max(1rem, env(safe-area-inset-bottom));
+}
+
+.floating-actions {
+  position: fixed;
+  z-index: 30;
+  right: var(--floating-right);
+  bottom: var(--floating-bottom);
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  pointer-events: none;
+}
+
+.floating-actions > button {
+  pointer-events: auto;
+}
+
+.toc-dialog {
+  right: var(--floating-right);
+  bottom: calc(var(--floating-bottom) + 3.5rem);
+}
+
+@media (min-width: 640px) {
+  :root {
+    --floating-right: max(1.5rem, env(safe-area-inset-right));
+    --floating-bottom: max(1.5rem, env(safe-area-inset-bottom));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .icon-wobble svg,
+  .code-copy-button {
+    transition: none;
+  }
 }
 
 /* Pagefind UI restyled to match the blog's look. */

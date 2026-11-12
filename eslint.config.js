@@ -8,6 +8,7 @@ export default tseslint.config(
     ignores: [
       "dist/",
       "node_modules/",
+      ".vite-ssg-temp/",
       "public/",
       ".astro/",
       "draft/",
