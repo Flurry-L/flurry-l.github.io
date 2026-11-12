@@ -45,7 +45,6 @@ function onResultClick(event: MouseEvent) {
       hide-shortcut
       placeholder="搜索"
       title="搜索"
-      class="icon-wobble"
     />
     <pagefind-modal ref="modal" @click="onResultClick" />
   </div>

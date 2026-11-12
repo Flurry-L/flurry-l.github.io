@@ -2,9 +2,11 @@
 import { enableAutoUnmount, mount } from "@vue/test-utils";
 import { createSSRApp, defineComponent, h, nextTick } from "vue";
 import { renderToString } from "vue/server-renderer";
+import { createMemoryHistory, createRouter } from "vue-router";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 import { provideTheme, useTheme } from "../src/composables/useTheme";
+import SiteHeader from "../src/components/SiteHeader.vue";
 
 const Consumer = {
   setup() {
@@ -23,6 +25,12 @@ const ThemeApp = defineComponent({
     return () => h(Consumer);
   },
 });
+const HeaderApp = {
+  setup() {
+    provideTheme();
+    return () => h(SiteHeader);
+  },
+};
 
 let preference: MediaQueryList;
 enableAutoUnmount(afterEach);
@@ -46,6 +54,29 @@ async function setSystemDark(matches: boolean) {
   preference.dispatchEvent(Object.assign(new Event("change"), { matches }));
   await nextTick();
 }
+
+it("toggles both ways repeatedly through the actual header button", async () => {
+  const router = createRouter({
+    history: createMemoryHistory(),
+    routes: ["home", "links", "about"].map(name => ({
+      name,
+      path: name === "home" ? "/" : `/${name}`,
+      component: { render: () => h("div") },
+    })),
+  });
+  await router.push("/");
+  const wrapper = mount(HeaderApp, {
+    global: { plugins: [router], stubs: { SiteSearch: true } },
+  });
+  await nextTick();
+  for (const dark of [true, false, true, false]) {
+    await wrapper.get('button[aria-label^="切换到"]').trigger("click");
+    expect(document.documentElement.classList.contains("dark")).toBe(dark);
+    expect(
+      wrapper.get('button[aria-label^="切换到"]').attributes("aria-label")
+    ).toBe(dark ? "切换到浅色模式" : "切换到深色模式");
+  }
+});
 
 it("follows system changes until the reader chooses a different theme", async () => {
   const wrapper = mount(ThemeApp);

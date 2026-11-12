@@ -59,7 +59,11 @@ body:has(dialog[open]) {
 /* Keep third-party search and native header actions in the same button family. */
 .header-action,
 pagefind-modal-trigger .pf-trigger-btn {
-  @apply text-muted-foreground hover:text-accent size-9 cursor-pointer items-center justify-center rounded-md border-0 bg-transparent p-2 transition-colors;
+  @apply text-muted-foreground hover:text-accent size-9 shrink-0 cursor-pointer place-items-center rounded-md border-0 bg-transparent p-0 leading-none transition-colors;
+}
+
+pagefind-modal-trigger .pf-trigger-btn {
+  display: grid;
 }
 
 .header-action:focus-visible,
@@ -68,18 +72,17 @@ pagefind-modal-trigger .pf-trigger-btn:focus-visible {
   outline-offset: 2px;
 }
 
+.header-action > svg,
 pagefind-modal-trigger .pf-trigger-icon {
+  display: block;
   width: 1.25rem;
   height: 1.25rem;
+}
+
+pagefind-modal-trigger .pf-trigger-icon {
   background: currentColor;
-}
-
-.icon-wobble :is(svg, .pf-trigger-icon) {
-  transition: transform 0.2s ease;
-}
-
-.icon-wobble:hover :is(svg, .pf-trigger-icon) {
-  transform: rotate(-10deg) scale(1.12);
+  mask-position: center;
+  mask-repeat: no-repeat;
 }
 
 /* Reading experience: generous line height for Chinese text, theme-aware
@@ -313,13 +316,8 @@ pagefind-modal-trigger .pf-trigger-icon {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .icon-wobble :is(svg, .pf-trigger-icon),
   .code-copy-button {
     transition: none;
-  }
-
-  .icon-wobble:hover :is(svg, .pf-trigger-icon) {
-    transform: none;
   }
 }
 
@@ -341,7 +339,7 @@ pagefind-modal-trigger {
 }
 
 pagefind-modal-trigger {
-  display: inline-flex;
+  display: grid;
   /* Tabler's outline search matches the Vue icons used by the other actions. */
   --pf-icon-search: url("../assets/icons/search.svg");
 }

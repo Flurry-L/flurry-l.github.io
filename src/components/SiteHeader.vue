@@ -72,7 +72,7 @@ watch(() => route.fullPath, closeMenu);
           :href="github.url"
           target="_blank"
           rel="noopener noreferrer"
-          class="header-action icon-wobble hidden sm:inline-flex"
+          class="header-action hidden sm:inline-grid"
           aria-label="GitHub"
           title="GitHub"
         >
@@ -81,10 +81,10 @@ watch(() => route.fullPath, closeMenu);
 
         <button
           type="button"
-          class="header-action icon-wobble inline-flex"
+          class="header-action inline-grid"
           :aria-label="isDark ? '切换到浅色模式' : '切换到深色模式'"
           :title="isDark ? '切换到浅色模式' : '切换到深色模式'"
-          @click="toggleTheme"
+          @click="toggleTheme()"
         >
           <IconSun v-if="isDark" class="size-5" aria-hidden="true" />
           <IconMoon v-else class="size-5" aria-hidden="true" />
@@ -92,7 +92,7 @@ watch(() => route.fullPath, closeMenu);
 
         <button
           type="button"
-          class="header-action inline-flex sm:hidden"
+          class="header-action inline-grid sm:hidden"
           :aria-expanded="menuOpen"
           :aria-label="menuOpen ? '关闭导航菜单' : '打开导航菜单'"
           @click="menuOpen = !menuOpen"
