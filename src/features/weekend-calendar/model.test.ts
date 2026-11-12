@@ -20,13 +20,13 @@ describe("buildWeekendCalendar", () => {
     expect(calendar.totalEvents).toBe(3);
   });
 
-  it("formats a range within one year without repeating the year", () => {
+  it("uses the same localized month labels for the range and month picker", () => {
     const calendar = buildWeekendCalendar([
       { date: "2026-02-08", text: "start" },
       { date: "2026-06-28", text: "end" },
     ]);
 
-    expect(calendar.rangeLabel).toBe("2026 年 2 月至 6 月");
+    expect(calendar.rangeLabel).toBe("2026 年 2 月 – 2026 年 6 月");
   });
 
   it("formats cross-year ranges and month labels", () => {
@@ -35,7 +35,7 @@ describe("buildWeekendCalendar", () => {
       { date: "2026-01-03", text: "end" },
     ]);
 
-    expect(calendar.rangeLabel).toBe("2025 年 12 月至 2026 年 1 月");
+    expect(calendar.rangeLabel).toBe("2025 年 12 月 – 2026 年 1 月");
     expect(calendar.months.map(month => month.label)).toEqual([
       "2025 年 12 月",
       "2026 年 1 月",

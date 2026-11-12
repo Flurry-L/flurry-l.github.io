@@ -125,14 +125,9 @@ export function buildWeekendCalendar(
   return {
     months,
     rangeLabel:
-      months.length > 0
-        ? formatText(
-            monthFormatter.formatRange(
-              new Date(`${months[0].key}-01`),
-              new Date(`${months.at(-1)!.key}-01`)
-            )
-          )
-        : "",
+      months.length > 1
+        ? `${months[0].label} – ${months.at(-1)!.label}`
+        : (months[0]?.label ?? ""),
     totalEvents: sortedEvents.length,
   };
 }

@@ -17,7 +17,7 @@
 正文排版规则集中在 `src/styles/typography.css`，继续使用 Tailwind Typography；生成文案的格式化集中在 `src/lib/format.ts`。依据 W3C《中文排版需求》和 CSS Text，正文采用原生排版间隙；日期、字数、阅读时间和日历标签则使用 `Intl` 与 Pangu 生成带标准间距的显示文本：
 
 - 全站使用原生 `text-autospace`，包括导航、标题、摘要、正文和元信息。先声明 `normal`，再声明带 `replace` 的规则：支持时将已有半角空格按自动间隙处理；仅支持基础属性的浏览器仍能为紧邻的中西文增加间隔。自动间隙不加入 DOM 文本，也不改变复制、搜索或文章锚点。
-- `Intl.DateTimeFormat`、`formatRange` 和 `Intl.NumberFormat` 负责日期、月份范围与数字本地化；Pangu 的纯字符串 API `spaceText` 负责生成文案的中西文间距。这些标签不再依赖浏览器的 `text-autospace` 支持，机器日期、URL 和 ID 保持原值。
+- `Intl.DateTimeFormat` 和 `Intl.NumberFormat` 负责日期、月份与数字本地化；Pangu 的纯字符串 API `spaceText` 负责生成文案的中西文间距。月份范围直接连接已有的起止月份标签，保持与月份选择框一致，避免 `formatRange` 在不同国际化数据版本下使用不同的月份格式。这些标签不再依赖浏览器的 `text-autospace` 支持，机器日期、URL 和 ID 保持原值。
 - 正文在不支持自动间距的旧浏览器中保留原有显示；不额外扫描整页或改写 Markdown 源码。`replace`、标点压缩等能力作为渐进增强，不能保证所有浏览器表现完全一致。
 - 保留中文行首、行尾禁则，正文使用 1.9 倍行高；支持时收紧行首标点并允许末尾标点悬挂。标题与段落分别使用 `text-wrap: balance` / `pretty` 改善断行。
 - 正文数字使用比例宽度；日期元信息、归档、日历和表格中需要对齐的数字使用等宽数字。代码、键位提示、输入框与公式关闭自动间距，保留其自身排版。
