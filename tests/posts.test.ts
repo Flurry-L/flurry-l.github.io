@@ -4,6 +4,7 @@ import path from "node:path";
 
 import sharp from "sharp";
 import { JSDOM } from "jsdom";
+import { renderToString as renderMath } from "katex";
 import { build as viteBuild } from "vite";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 
@@ -168,7 +169,7 @@ describe("tags", () => {
 describe("date formatting (Asia/Shanghai)", () => {
   it("formats dates in Chinese", () => {
     expect(publicationDate("2024-11-19T14:25:00.000Z").dateLabel).toBe(
-      "2024年11月19日"
+      "2024 年 11 月 19 日"
     );
     expect(publicationDate("2024-06-01T00:00:00.000Z").archiveDate).toBe(
       "06-01"
@@ -177,7 +178,7 @@ describe("date formatting (Asia/Shanghai)", () => {
 
   it("uses the site timezone when the UTC date differs", () => {
     expect(publicationDate("2024-11-19T16:00:00.000Z").dateLabel).toBe(
-      "2024年11月20日"
+      "2024 年 11 月 20 日"
     );
     expect(publicationDate("2024-12-31T16:00:00.000Z").year).toBe(2025);
   });
@@ -353,6 +354,27 @@ describe("heading anchors and token-based TOC", () => {
 });
 
 describe("markdown reading metadata", () => {
+  it("renders the importance-sampling formulas with the same KaTeX used for CSS", async () => {
+    const source = await readPostSource(
+      path.resolve("src/content/posts/IS-misunderstand.md")
+    );
+    const post = await renderPost(source);
+    const md = await getMarkdown();
+    const formulas = md
+      .parse(source.content, {})
+      .filter(token => token.type === "math_block");
+    const document = new JSDOM(post.html).window.document;
+    expect(
+      document.querySelectorAll(".katex-block > .katex-display")
+    ).toHaveLength(4);
+    expect(document.querySelector(".katex-error")).toBeNull();
+    for (const formula of formulas) {
+      expect(post.html).toContain(
+        renderMath(formula.content, { displayMode: true })
+      );
+    }
+  });
+
   it("joins Chinese soft wraps while retaining English spaces, hard breaks and code", async () => {
     const { postsDir } = contentFixture({
       first:

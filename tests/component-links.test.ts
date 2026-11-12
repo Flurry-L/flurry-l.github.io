@@ -24,7 +24,7 @@ it("keeps reserved characters inside article slugs and tags", async () => {
         slug,
         title: "Article",
         pubDatetime: "2025-01-01T00:00:00Z",
-        dateLabel: "2025年1月1日",
+        dateLabel: "2025 年 1 月 1 日",
         archiveDate: "01-01",
         year: 2025,
         description: "",

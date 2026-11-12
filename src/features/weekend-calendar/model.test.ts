@@ -26,7 +26,7 @@ describe("buildWeekendCalendar", () => {
       { date: "2026-06-28", text: "end" },
     ]);
 
-    expect(calendar.rangeLabel).toBe("2026年2月至6月");
+    expect(calendar.rangeLabel).toBe("2026 年 2 月至 6 月");
   });
 
   it("formats cross-year ranges and month labels", () => {
@@ -35,10 +35,10 @@ describe("buildWeekendCalendar", () => {
       { date: "2026-01-03", text: "end" },
     ]);
 
-    expect(calendar.rangeLabel).toBe("2025年12月至2026年1月");
+    expect(calendar.rangeLabel).toBe("2025 年 12 月至 2026 年 1 月");
     expect(calendar.months.map(month => month.label)).toEqual([
-      "2025年12月",
-      "2026年1月",
+      "2025 年 12 月",
+      "2026 年 1 月",
     ]);
   });
 
@@ -51,5 +51,9 @@ describe("buildWeekendCalendar", () => {
     expect(february.days).toHaveLength(29);
     expect(february.firstDayOffset).toBe(3);
     expect(february.agenda[0].weekday).toBe("周四");
+    expect(calendar.rangeLabel).toBe("2024 年 2 月");
+    expect(february.days[28].accessibleLabel).toBe(
+      "2024 年 2 月 29 日，1 个日程"
+    );
   });
 });

@@ -55,14 +55,14 @@ function makePost(slug: string): Post {
     slug,
     title: slug,
     pubDatetime: "2025-01-01T00:00:00Z",
-    dateLabel: "2025年1月1日",
+    dateLabel: "2025 年 1 月 1 日",
     archiveDate: "01-01",
     year: 2025,
     description: "",
     excerpt: "",
     tags: [],
-    wordCount: 3,
-    readingMinutes: 1,
+    wordCount: 1234,
+    readingMinutes: 4,
     weekendCalendar: null,
     html: `<h2 id="${slug}-a">A</h2><p>Paragraph</p><h2 id="${slug}-b">B</h2><h3 id="${slug}-c">C</h3>`,
     toc: ["a", "b", "c"].map(id => ({
@@ -108,6 +108,8 @@ it("reuses heading nodes, throttles scrolling, and refreshes them when the artic
   // jsdom does not implement the dialog methods.
   (wrapper.get("dialog").element as HTMLDialogElement).close = vi.fn();
   await nextTick();
+  expect(wrapper.get("header time").text()).toBe("2025 年 1 月 1 日");
+  expect(wrapper.get("header").text()).toContain("1,234 字 · 约 4 分钟阅读");
   expect(
     wrapper.get('aside [aria-current="location"]').attributes("href")
   ).toBe("#first-a");

@@ -2,7 +2,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import { katex } from "@mdit/plugin-katex";
+import { katex } from "@mdit/plugin-katex-slim";
 import Shiki from "@shikijs/markdown-it";
 import matter from "gray-matter";
 import { slug as slugify } from "github-slugger";
@@ -12,6 +12,7 @@ import cjkBreaks from "markdown-it-cjk-breaks";
 
 import type Token from "markdown-it/lib/token.mjs";
 import siteConfig from "../../site.config.json";
+import { formatText } from "../../src/lib/format";
 import type {
   Post,
   PostMeta,
@@ -50,19 +51,18 @@ const codeControls =
 const dateFormatter = new Intl.DateTimeFormat("zh-CN", {
   timeZone: siteConfig.site.timezone,
   year: "numeric",
-  month: "2-digit",
-  day: "2-digit",
+  month: "long",
+  day: "numeric",
 });
 
 export function publicationDate(iso: string) {
+  const date = new Date(iso);
   const parts = Object.fromEntries(
-    dateFormatter
-      .formatToParts(new Date(iso))
-      .map(part => [part.type, part.value])
+    dateFormatter.formatToParts(date).map(part => [part.type, part.value])
   );
   return {
-    dateLabel: `${parts.year}年${Number(parts.month)}月${Number(parts.day)}日`,
-    archiveDate: `${parts.month}-${parts.day}`,
+    dateLabel: formatText(dateFormatter.format(date)),
+    archiveDate: `${parts.month.padStart(2, "0")}-${parts.day.padStart(2, "0")}`,
     year: Number(parts.year),
   };
 }

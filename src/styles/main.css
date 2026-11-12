@@ -344,13 +344,13 @@ pagefind-modal-trigger {
   --pf-icon-search: url("../assets/icons/search.svg");
 }
 
-/* KaTeX display equations scroll horizontally on narrow screens. */
+/* Keep KaTeX's glyph layout intact; its existing block wrapper owns scrolling.
+   https://github.com/KaTeX/KaTeX/discussions/2942 */
 .prose .katex {
   font-size: 1.05em;
 }
 
-.katex-display {
+.prose .katex-block {
   overflow-x: auto;
   overflow-y: hidden;
-  padding-block: 0.25rem;
 }

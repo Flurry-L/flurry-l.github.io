@@ -16,6 +16,7 @@ import GiscusComments from "../components/GiscusComments.vue";
 import MarkdownContent from "../components/MarkdownContent.vue";
 import PostToc from "../components/PostToc.vue";
 import TagPill from "../components/TagPill.vue";
+import { formatReadingInfo } from "../lib/format";
 import { getAdjacentPosts } from "../lib/posts";
 
 const WeekendCalendar = defineAsyncComponent(
@@ -86,11 +87,9 @@ function onTocClick(event: MouseEvent) {
             class="text-muted-foreground mt-4 flex flex-wrap items-center gap-3 text-sm tabular-nums"
           >
             <time :datetime="post.pubDatetime">{{ post.dateLabel }}</time>
-            <span
-              >{{ post.wordCount.toLocaleString("zh-CN") }}字 · 约{{
-                post.readingMinutes
-              }}分钟阅读</span
-            >
+            <span>{{
+              formatReadingInfo(post.wordCount, post.readingMinutes)
+            }}</span>
             <div v-if="post.tags.length > 0" class="flex flex-wrap gap-1.5">
               <TagPill v-for="tag in post.tags" :key="tag" :tag="tag" />
             </div>

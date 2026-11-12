@@ -2,6 +2,7 @@
 import { computed, ref, useId } from "vue";
 
 import type { WeekendCalendarInput } from "../../types/post";
+import { formatNumber, formatText } from "../../lib/format";
 import { buildWeekendCalendar } from "./model";
 
 const props = defineProps<WeekendCalendarInput>();
@@ -22,7 +23,11 @@ function jumpToDate(date: string) {
       <div>
         <p>{{ summary }}</p>
         <p class="calendar-meta">
-          {{ model.rangeLabel }} · 共{{ model.totalEvents }}项
+          {{
+            formatText(
+              `${model.rangeLabel} · 共${formatNumber(model.totalEvents)}项`
+            )
+          }}
         </p>
       </div>
       <label class="calendar-picker">
@@ -95,7 +100,9 @@ function jumpToDate(date: string) {
         role="region"
         :aria-label="`${month.label}日程列表`"
       >
-        <h4>当月日程 · {{ month.eventCount }}项</h4>
+        <h4>
+          {{ formatText(`当月日程 · ${formatNumber(month.eventCount)}项`) }}
+        </h4>
         <ol>
           <li
             v-for="day in month.agenda"
@@ -105,7 +112,7 @@ function jumpToDate(date: string) {
           >
             <time :datetime="day.date">
               <strong>{{ String(day.day).padStart(2, "0") }}</strong>
-              <span>{{ day.month }}月 · {{ day.weekday }}</span>
+              <span>{{ formatText(`${day.month}月 · ${day.weekday}`) }}</span>
             </time>
             <div>
               <p v-for="(event, index) in day.events" :key="index">

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+/* eslint-disable vue/no-v-html -- HTML comes from the shared Markdown build pipeline. */
 import { useTemplateRef } from "vue";
 
 import { useCodeCopy } from "../composables/useCodeCopy";
@@ -13,6 +14,5 @@ defineExpose({ element });
 </script>
 
 <template>
-  <!-- eslint-disable-next-line vue/no-v-html -->
   <div ref="content" class="prose max-w-none" v-html="html" />
 </template>

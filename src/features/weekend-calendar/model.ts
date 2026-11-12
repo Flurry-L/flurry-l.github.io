@@ -1,14 +1,21 @@
 import type { WeekendCalendarEvent } from "../../types/post";
+import { formatNumber, formatText } from "../../lib/format";
 
-const WEEKDAY_NAMES = [
-  "周日",
-  "周一",
-  "周二",
-  "周三",
-  "周四",
-  "周五",
-  "周六",
-] as const;
+const monthFormatter = new Intl.DateTimeFormat("zh-CN", {
+  year: "numeric",
+  month: "long",
+  timeZone: "UTC",
+});
+const dateFormatter = new Intl.DateTimeFormat("zh-CN", {
+  year: "numeric",
+  month: "long",
+  day: "numeric",
+  timeZone: "UTC",
+});
+const weekdayFormatter = new Intl.DateTimeFormat("zh-CN", {
+  weekday: "short",
+  timeZone: "UTC",
+});
 
 export interface CalendarDay {
   date: string;
@@ -40,13 +47,6 @@ export interface WeekendCalendarModel {
   months: CalendarMonth[];
   rangeLabel: string;
   totalEvents: number;
-}
-
-function formatRange(first: CalendarMonth, last: CalendarMonth) {
-  if (first.key === last.key) return `${first.year}年${first.month}月`;
-  if (first.year === last.year)
-    return `${first.year}年${first.month}月至${last.month}月`;
-  return `${first.year}年${first.month}月至${last.year}年${last.month}月`;
 }
 
 export function buildWeekendCalendar(
@@ -81,13 +81,17 @@ export function buildWeekendCalendar(
           const date = `${key}-${String(day).padStart(2, "0")}`;
           const dayEvents = eventsByDate.get(date) ?? [];
           const eventDescription =
-            dayEvents.length > 0 ? `，${dayEvents.length} 个日程` : "";
+            dayEvents.length > 0
+              ? `，${formatNumber(dayEvents.length)}个日程`
+              : "";
 
           return {
             date,
             day,
             events: dayEvents,
-            accessibleLabel: `${year}年${month}月${day}日${eventDescription}`,
+            accessibleLabel: formatText(
+              dateFormatter.format(new Date(date)) + eventDescription
+            ),
           };
         }
       );
@@ -99,10 +103,7 @@ export function buildWeekendCalendar(
             date,
             day,
             month,
-            weekday:
-              WEEKDAY_NAMES[
-                new Date(Date.UTC(year, month - 1, day)).getUTCDay()
-              ],
+            weekday: weekdayFormatter.format(new Date(date)),
             events: dayEvents,
           };
         }
@@ -112,7 +113,7 @@ export function buildWeekendCalendar(
         key,
         year,
         month,
-        label: `${year}年${month}月`,
+        label: formatText(monthFormatter.format(new Date(`${key}-01`))),
         firstDayOffset,
         days,
         agenda,
@@ -123,7 +124,15 @@ export function buildWeekendCalendar(
 
   return {
     months,
-    rangeLabel: months.length > 0 ? formatRange(months[0], months.at(-1)!) : "",
+    rangeLabel:
+      months.length > 0
+        ? formatText(
+            monthFormatter.formatRange(
+              new Date(`${months[0].key}-01`),
+              new Date(`${months.at(-1)!.key}-01`)
+            )
+          )
+        : "",
     totalEvents: sortedEvents.length,
   };
 }
