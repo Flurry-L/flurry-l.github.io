@@ -31,9 +31,8 @@ const attributes = computed(() =>
 
 <template>
   <section v-if="months.length" aria-label="行动记录" class="mt-6">
-    <div class="mx-auto max-w-sm">
+    <div class="activity-calendar mx-auto max-w-sm">
       <Calendar
-        class="activity-calendar"
         locale="zh-CN"
         timezone="UTC"
         color="green"
@@ -105,7 +104,7 @@ const attributes = computed(() =>
 </template>
 
 <style scoped>
-.activity-calendar {
+.activity-calendar :deep(.vc-container) {
   --vc-font-family: var(--font-sans);
   --vc-color: var(--foreground);
   --vc-header-title-color: var(--foreground);
