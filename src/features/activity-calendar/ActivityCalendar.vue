@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, useId } from "vue";
+import { computed } from "vue";
 import { Calendar } from "v-calendar";
 import "v-calendar/style.css";
 
@@ -11,46 +11,22 @@ import { groupActivityMonths } from "./model";
 const props = defineProps<ActivityCalendarInput>();
 const { isDark } = useTheme();
 const months = computed(() => groupActivityMonths(props.events));
-const selectedMonthKey = ref(months.value[0]?.key);
-const id = useId();
-const attributes = computed(() => [
-  {
-    key: "activities",
-    dot: true,
-    dates: props.events.map(event => new Date(event.date)),
-  },
-]);
-
-function onPagesChange(pages: { year: number; month: number }[]) {
-  const { year, month } = pages[0];
-  selectedMonthKey.value = `${year}-${String(month).padStart(2, "0")}`;
-}
-
-type ActivityDay = { id: string; inMonth: boolean };
-
-function jumpToDay(day: ActivityDay) {
-  if (!day.inMonth) return;
-  const target = document.getElementById(`${id}-day-${day.id}`);
-  if (!target) return;
-  target.focus({ preventScroll: true });
-  target.scrollIntoView({ block: "nearest" });
-}
-
-function onDayKeydown(day: ActivityDay, event: KeyboardEvent) {
-  if (["Enter", " "].includes(event.key)) {
-    event.preventDefault();
-    jumpToDay(day);
-  }
-}
+const attributes = computed(() =>
+  months.value.flatMap(month =>
+    month.days.map(day => ({
+      key: day.date,
+      dot: true,
+      dates: [new Date(day.date)],
+      popover: { visibility: "hover-focus" as const },
+      customData: day,
+    }))
+  )
+);
 </script>
 
 <template>
-  <section
-    v-if="months.length"
-    aria-label="行动记录"
-    class="mt-6 grid items-start gap-6 sm:grid-cols-[18rem_minmax(0,1fr)]"
-  >
-    <div class="sm:sticky sm:top-24">
+  <section v-if="months.length" aria-label="行动记录" class="mt-6">
+    <div class="mx-auto max-w-sm">
       <Calendar
         class="activity-calendar"
         locale="zh-CN"
@@ -58,7 +34,7 @@ function onDayKeydown(day: ActivityDay, event: KeyboardEvent) {
         color="green"
         :is-dark="isDark"
         :first-day-of-week="2"
-        :masks="{ title: 'YYYY年M月' }"
+        :masks="{ title: 'YYYY年M月', dayPopover: 'YYYY年M月D日' }"
         :initial-page="months[0]"
         :min-page="months[0]"
         :max-page="months.at(-1)"
@@ -66,40 +42,63 @@ function onDayKeydown(day: ActivityDay, event: KeyboardEvent) {
         borderless
         transparent
         expanded
-        @update:pages="onPagesChange"
-        @dayclick="jumpToDay"
-        @daykeydown="onDayKeydown"
       >
         <template #header-title="{ title }">{{ formatText(title) }}</template>
+        <template
+          #day-popover="{ day, format, masks, attributes: dayAttributes }"
+        >
+          <div
+            class="w-72 max-w-[calc(100vw-3rem)] p-2 text-sm leading-relaxed font-normal"
+          >
+            <time
+              :datetime="day.id"
+              class="text-muted-foreground text-xs tabular-nums"
+            >
+              {{ formatText(format(day.date, masks.dayPopover)) }}
+            </time>
+            <ul class="mt-2 space-y-2">
+              <template v-for="{ key, customData } in dayAttributes" :key="key">
+                <li v-for="(event, index) in customData.records" :key="index">
+                  {{ event.text }}
+                </li>
+              </template>
+            </ul>
+          </div>
+        </template>
       </Calendar>
+      <p class="text-muted-foreground mt-2 text-center text-xs">
+        点按有圆点的日期查看记录
+      </p>
     </div>
 
-    <div class="prose prose-sm max-w-none min-w-0">
-      <ol
-        v-for="month in months"
-        v-show="selectedMonthKey === month.key"
-        :key="month.key"
-        :aria-label="`${month.label}行动记录`"
-        class="my-0 list-none pl-0"
+    <details class="mt-4">
+      <summary
+        class="text-muted-foreground hover:text-foreground cursor-pointer text-sm"
       >
-        <li
-          v-for="day in month.days"
-          :id="`${id}-day-${day.date}`"
-          :key="day.date"
-          tabindex="-1"
-          class="focus-visible:outline-accent pl-0 focus-visible:outline-2 focus-visible:outline-offset-4"
-        >
-          <time
-            :datetime="day.date"
-            class="text-muted-foreground text-xs font-medium tabular-nums"
-            >{{ day.label }}</time
-          >
-          <p v-for="(event, index) in day.records" :key="index" class="my-1">
-            {{ event.text }}
-          </p>
-        </li>
-      </ol>
-    </div>
+        查看全部记录
+      </summary>
+      <div class="prose prose-sm mt-4 max-w-none">
+        <div v-for="month in months" :key="month.key">
+          <p class="font-semibold">{{ month.label }}</p>
+          <ol :aria-label="`${month.label}行动记录`" class="list-none pl-0">
+            <li v-for="day in month.days" :key="day.date" class="pl-0">
+              <time
+                :datetime="day.date"
+                class="text-muted-foreground text-xs font-medium tabular-nums"
+                >{{ day.label }}</time
+              >
+              <p
+                v-for="(event, index) in day.records"
+                :key="index"
+                class="my-1"
+              >
+                {{ event.text }}
+              </p>
+            </li>
+          </ol>
+        </div>
+      </div>
+    </details>
   </section>
 </template>
 
@@ -113,5 +112,11 @@ function onDayKeydown(day: ActivityDay, event: KeyboardEvent) {
   --vc-weekday-color: var(--muted-foreground);
   --vc-accent-500: var(--accent);
   --vc-accent-600: var(--accent);
+}
+
+.activity-calendar :deep(.vc-popover-content) {
+  --vc-popover-content-color: var(--foreground);
+  --vc-popover-content-bg: var(--background);
+  --vc-popover-content-border: var(--border);
 }
 </style>

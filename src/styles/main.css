@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "@pagefind/component-ui/css/pagefind-component-ui.css" layer(components);
+@import "tocbot/tocbot.css" layer(components);
 @import "./typography.css";
 @plugin "@tailwindcss/typography";
 

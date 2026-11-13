@@ -1,55 +1,115 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
+import { nextTick, onBeforeUnmount, onMounted, ref } from "vue";
+import { useRouter } from "vue-router";
+import { useMutationObserver } from "@vueuse/core";
+import tocbot from "tocbot";
 
 import type { TocItem } from "../lib/posts";
 
-const props = defineProps<{ items: TocItem[]; activeId: string }>();
+defineProps<{ items: TocItem[] }>();
+const emit = defineEmits<{ navigate: [] }>();
+const router = useRouter();
+const toc = ref<HTMLElement>();
+const ready = ref(false);
+let previousHashChange: Window["onhashchange"];
+let previousScrollEnd: Window["onscrollend"];
 
-const navRef = ref<HTMLElement>();
+function onClick(event: MouseEvent) {
+  if (
+    event.button ||
+    event.metaKey ||
+    event.ctrlKey ||
+    event.shiftKey ||
+    event.altKey
+  )
+    return;
+  event.preventDefault();
+  emit("navigate");
+  void router.push({
+    hash: (event.currentTarget as HTMLAnchorElement).getAttribute("href")!,
+  });
+}
 
-watch(
-  () => props.activeId,
-  id => {
-    const nav = navRef.value;
-    if (!nav || !id) return;
-    const link = nav.querySelector<HTMLElement>(
-      `[data-toc-id="${CSS.escape(id)}"]`
-    );
-    const scroller = nav.parentElement;
-    if (link && scroller && scroller.scrollHeight > scroller.clientHeight) {
-      scroller.scrollTop +=
-        link.getBoundingClientRect().top -
-        scroller.getBoundingClientRect().top -
-        scroller.clientHeight / 2;
+onMounted(async () => {
+  ready.value = true;
+  await nextTick();
+  previousHashChange = window.onhashchange;
+  previousScrollEnd = window.onscrollend;
+  tocbot.init({
+    tocElement: toc.value,
+    contentSelector: "[data-post-content]",
+    headingSelector: "h2[id], h3[id]",
+    hasInnerContainers: true,
+    headingsOffset: 88,
+    scrollSmooth: false,
+    orderedList: false,
+    collapseDepth: 6,
+    onClick,
+  });
+});
+
+// Tocbot owns link classes; reflect its active link for assistive technology.
+useMutationObserver(
+  toc,
+  () => {
+    for (const link of toc.value!.querySelectorAll("a")) {
+      if (link.classList.contains("is-active-link"))
+        link.setAttribute("aria-current", "location");
+      else link.removeAttribute("aria-current");
     }
   },
-  { flush: "post" }
+  { subtree: true, attributes: true, attributeFilter: ["class"] }
 );
+
+onBeforeUnmount(() => {
+  tocbot.destroy();
+  window.onhashchange = previousHashChange;
+  window.onscrollend = previousScrollEnd;
+});
+
+defineExpose({ refresh: () => tocbot.refresh() });
 </script>
 
 <template>
-  <nav ref="navRef" aria-label="文章目录" class="text-sm">
+  <nav aria-label="文章目录" class="post-toc text-sm">
     <p class="mb-2 font-medium">目录</p>
-    <ul class="border-border space-y-1.5 border-l">
+    <div
+      v-show="ready"
+      ref="toc"
+      class="toc max-h-[55vh] xl:max-h-[calc(100vh-8rem)]"
+    />
+    <ul v-if="!ready" class="border-border space-y-1.5 border-l">
       <li
         v-for="item in items"
         :key="item.id"
         :class="item.depth === 3 ? 'pl-6' : 'pl-3'"
       >
-        <a
-          :href="`#${item.id}`"
-          :data-toc-id="item.id"
-          :aria-current="activeId === item.id ? 'location' : undefined"
-          class="hover:text-accent block leading-6 transition-colors"
-          :class="
-            activeId === item.id
-              ? 'text-accent font-medium'
-              : 'text-muted-foreground'
-          "
+        <RouterLink
+          :to="{ hash: `#${item.id}` }"
+          class="text-muted-foreground hover:text-accent block leading-6"
         >
           {{ item.text }}
-        </a>
+        </RouterLink>
       </li>
     </ul>
   </nav>
 </template>
+
+<style scoped>
+.post-toc :deep(.toc-link) {
+  display: block;
+  padding-block: 0.2rem;
+  color: var(--muted-foreground);
+  line-height: 1.5;
+}
+.post-toc :deep(.toc-link:hover),
+.post-toc :deep(.is-active-link) {
+  color: var(--accent);
+}
+.post-toc :deep(.toc-link::before) {
+  background: var(--border);
+}
+.post-toc :deep(.is-active-link::before) {
+  background: var(--accent);
+}
+</style>

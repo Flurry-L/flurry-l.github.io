@@ -1,20 +1,10 @@
 <script setup lang="ts">
-import {
-  computed,
-  defineAsyncComponent,
-  onBeforeUnmount,
-  onMounted,
-  ref,
-  watch,
-} from "vue";
+import { computed, defineAsyncComponent } from "vue";
 import { useRoute } from "vue-router";
-import { IconList } from "@tabler/icons-vue";
-import { throttle } from "es-toolkit/function";
-import { useEventListener } from "@vueuse/core";
 
 import GiscusComments from "../components/GiscusComments.vue";
 import MarkdownContent from "../components/MarkdownContent.vue";
-import PostToc from "../components/PostToc.vue";
+import PostOutline from "../components/PostOutline.vue";
 import TagPill from "../components/TagPill.vue";
 import { formatReadingInfo } from "../lib/format";
 import { getAdjacentPosts } from "../lib/posts";
@@ -26,52 +16,7 @@ const ActivityCalendar = defineAsyncComponent(
 const route = useRoute();
 const slug = computed(() => String(route.params.slug));
 const post = computed(() => route.meta.post);
-const mounted = ref(false);
 const adjacent = computed(() => getAdjacentPosts(slug.value));
-const contentRef = ref<InstanceType<typeof MarkdownContent>>();
-const tocDialog = ref<HTMLDialogElement>();
-const activeHeadingId = ref("");
-let headings: HTMLElement[] = [];
-
-function updateActiveHeading() {
-  let active = "";
-  for (const heading of headings) {
-    if (heading.getBoundingClientRect().top > 120) break;
-    active = heading.id;
-  }
-  activeHeadingId.value = active;
-}
-
-function refreshHeadings() {
-  headings = [
-    ...(contentRef.value?.element?.querySelectorAll<HTMLElement>(
-      "h2[id], h3[id]"
-    ) ?? []),
-  ];
-  updateActiveHeading();
-}
-const scheduleHeadingUpdate = throttle(updateActiveHeading, 100);
-
-onMounted(() => {
-  mounted.value = true;
-  refreshHeadings();
-});
-useEventListener("scroll", scheduleHeadingUpdate, { passive: true });
-useEventListener("resize", scheduleHeadingUpdate);
-onBeforeUnmount(() => scheduleHeadingUpdate.cancel());
-watch(
-  post,
-  () => {
-    activeHeadingId.value = "";
-    tocDialog.value?.close();
-    refreshHeadings();
-  },
-  { flush: "post" }
-);
-
-function onTocClick(event: MouseEvent) {
-  if ((event.target as HTMLElement).closest("a")) tocDialog.value?.close();
-}
 </script>
 
 <template>
@@ -96,7 +41,7 @@ function onTocClick(event: MouseEvent) {
           </div>
         </header>
 
-        <MarkdownContent ref="contentRef" class="mt-8" :html="post.html" />
+        <MarkdownContent data-post-content class="mt-8" :html="post.html" />
 
         <ActivityCalendar
           v-if="post.activityCalendar"
@@ -138,50 +83,12 @@ function onTocClick(event: MouseEvent) {
         />
       </article>
 
-      <aside
+      <PostOutline
         v-if="post.toc.length > 0"
-        class="absolute top-0 left-full ml-8 hidden h-full w-52 xl:block"
-      >
-        <div class="sticky top-20 max-h-[calc(100vh-6rem)] overflow-y-auto">
-          <PostToc :items="post.toc" :active-id="activeHeadingId" />
-        </div>
-      </aside>
+        :key="post.slug"
+        :items="post.toc"
+      />
     </div>
-
-    <template v-if="post.toc.length > 0">
-      <Teleport v-if="mounted" to="#floating-actions">
-        <button
-          type="button"
-          aria-label="打开目录"
-          aria-haspopup="dialog"
-          class="border-border bg-background text-muted-foreground hover:border-accent hover:text-accent order-1 flex size-11 items-center justify-center rounded-full border shadow-sm transition-colors motion-reduce:transition-none xl:hidden"
-          @click="tocDialog?.showModal()"
-        >
-          <IconList class="size-5" aria-hidden="true" />
-        </button>
-      </Teleport>
-      <dialog
-        ref="tocDialog"
-        aria-label="文章目录"
-        class="toc-dialog bg-background border-border text-foreground fixed inset-auto max-h-[65vh] w-72 max-w-[calc(100vw-2.5rem)] overflow-y-auto rounded-lg border p-4 shadow-lg backdrop:bg-black/30"
-        @click="
-          event => {
-            if (event.target === tocDialog) tocDialog?.close();
-          }
-        "
-      >
-        <button
-          type="button"
-          class="text-muted-foreground hover:text-accent mb-3 block w-full text-right text-sm"
-          @click="tocDialog?.close()"
-        >
-          关闭目录
-        </button>
-        <div @click="onTocClick">
-          <PostToc :items="post.toc" :active-id="activeHeadingId" />
-        </div>
-      </dialog>
-    </template>
   </template>
 
   <div v-else class="py-16 text-center">
