@@ -18,10 +18,6 @@
   font-variant-numeric: proportional-nums;
 }
 
-.prose :where(p, li, blockquote) {
-  text-wrap: pretty;
-}
-
 /* Code, formulas and verbatim fields retain their original spacing. */
 :where(pre, code, kbd, samp, textarea, input, .katex) {
   text-autospace: no-autospace;
