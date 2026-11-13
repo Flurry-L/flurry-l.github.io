@@ -17,7 +17,7 @@ import type {
   Post,
   PostMeta,
   TocItem,
-  WeekendCalendarInput,
+  ActivityCalendarInput,
 } from "../../src/types/post";
 
 export interface ResolvedImage {
@@ -260,8 +260,8 @@ export async function renderPost(
     html,
     ...readingStats(tokens),
     toc: extractToc(tokens),
-    weekendCalendar:
-      (data.weekendCalendar as WeekendCalendarInput | undefined) ?? null,
+    activityCalendar:
+      (data.activityCalendar as ActivityCalendarInput | undefined) ?? null,
   };
 }
 

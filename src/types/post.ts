@@ -1,11 +1,10 @@
-export interface WeekendCalendarEvent {
+export interface ActivityCalendarEvent {
   date: string;
   text: string;
 }
 
-export interface WeekendCalendarInput {
-  summary: string;
-  events: WeekendCalendarEvent[];
+export interface ActivityCalendarInput {
+  events: ActivityCalendarEvent[];
 }
 
 export interface TocItem {
@@ -27,7 +26,7 @@ export interface PostMeta {
 export interface Post extends PostMeta {
   html: string;
   toc: TocItem[];
-  weekendCalendar: WeekendCalendarInput | null;
+  activityCalendar: ActivityCalendarInput | null;
   wordCount: number;
   readingMinutes: number;
 }

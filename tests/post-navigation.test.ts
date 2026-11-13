@@ -63,7 +63,7 @@ function makePost(slug: string): Post {
     tags: [],
     wordCount: 1234,
     readingMinutes: 4,
-    weekendCalendar: null,
+    activityCalendar: null,
     html: `<h2 id="${slug}-a">A</h2><p>Paragraph</p><h2 id="${slug}-b">B</h2><h3 id="${slug}-c">C</h3>`,
     toc: ["a", "b", "c"].map(id => ({
       id: `${slug}-${id}`,

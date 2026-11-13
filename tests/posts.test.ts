@@ -516,8 +516,7 @@ describe("RSS markdown rendering", () => {
   it("includes the complete calendar as escaped, chronological static events", async () => {
     const { postsDir } = contentFixture({ first: "Calendar article" });
     const source = await readPostSource(path.join(postsDir, "first.md"));
-    source.data.weekendCalendar = {
-      summary: "Weekend <notes>",
+    source.data.activityCalendar = {
       events: [
         { date: "2026-04-05", text: "Later & second" },
         { date: "2026-03-07", text: "Earlier <first>" },
@@ -527,7 +526,7 @@ describe("RSS markdown rendering", () => {
       posts: [await renderPost(source)],
       pages: {},
     });
-    expect(rss).toContain("Weekend &lt;notes&gt;");
+    expect(rss).toContain('<ol aria-label="行动记录">');
     expect(rss).toContain("Later &amp; second");
     expect(rss.indexOf("Earlier &lt;first&gt;")).toBeLessThan(
       rss.indexOf("Later &amp; second")

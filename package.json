@@ -26,6 +26,7 @@
     "es-toolkit": "^1.53.2",
     "medium-zoom": "^1.1.2",
     "pangu": "^10.4.1",
+    "v-calendar": "^3.1.2",
     "vue": "^3.5.0",
     "vue-router": "^4.5.0"
   },

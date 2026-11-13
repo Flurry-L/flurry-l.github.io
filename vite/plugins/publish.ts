@@ -49,8 +49,8 @@ export function buildRss({ posts }: Content) {
     const url = new URL(`posts/${encodeURIComponent(post.slug)}`, site.url)
       .href;
     let calendarHtml = "";
-    if (post.weekendCalendar) {
-      const { summary, events } = post.weekendCalendar;
+    if (post.activityCalendar) {
+      const { events } = post.activityCalendar;
       const items = [...events]
         .sort((a, b) => a.date.localeCompare(b.date))
         .map(
@@ -58,7 +58,7 @@ export function buildRss({ posts }: Content) {
             `<li><time datetime="${event.date}">${event.date}</time> ${escape(event.text)}</li>`
         )
         .join("");
-      calendarHtml = `<section><h2>周末日程</h2><p>${escape(summary)}</p><ul>${items}</ul></section>`;
+      calendarHtml = `<ol aria-label="行动记录">${items}</ol>`;
     }
     feed.item({
       title: post.title,

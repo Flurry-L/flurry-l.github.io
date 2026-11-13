@@ -19,8 +19,8 @@ import TagPill from "../components/TagPill.vue";
 import { formatReadingInfo } from "../lib/format";
 import { getAdjacentPosts } from "../lib/posts";
 
-const WeekendCalendar = defineAsyncComponent(
-  () => import("../features/weekend-calendar/WeekendCalendar.vue")
+const ActivityCalendar = defineAsyncComponent(
+  () => import("../features/activity-calendar/ActivityCalendar.vue")
 );
 
 const route = useRoute();
@@ -98,11 +98,10 @@ function onTocClick(event: MouseEvent) {
 
         <MarkdownContent ref="contentRef" class="mt-8" :html="post.html" />
 
-        <WeekendCalendar
-          v-if="post.weekendCalendar"
+        <ActivityCalendar
+          v-if="post.activityCalendar"
           :key="post.slug"
-          :summary="post.weekendCalendar.summary"
-          :events="post.weekendCalendar.events"
+          :events="post.activityCalendar.events"
         />
 
         <nav
