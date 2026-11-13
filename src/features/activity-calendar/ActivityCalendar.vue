@@ -16,6 +16,11 @@ const attributes = computed(() =>
     month.days.map(day => ({
       key: day.date,
       dot: true,
+      content: {
+        style: {
+          color: isDark.value ? "var(--vc-accent-400)" : "var(--vc-accent-700)",
+        },
+      },
       dates: [new Date(day.date)],
       popover: { visibility: "hover-focus" as const },
       customData: day,
@@ -66,9 +71,6 @@ const attributes = computed(() =>
           </div>
         </template>
       </Calendar>
-      <p class="text-muted-foreground mt-2 text-center text-xs">
-        点按有圆点的日期查看记录
-      </p>
     </div>
 
     <details class="mt-4">
